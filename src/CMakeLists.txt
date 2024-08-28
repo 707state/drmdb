@@ -1,0 +1,14 @@
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${Boost_INCLUDE_DIRS})
+
+link_directories(${BOOST_LIBRARY_DIRS})
+
+add_subdirectory(common)
+add_subdirectory(parser)
+add_subdirectory(storage)
+add_subdirectory(system)
+add_subdirectory(transaction)
+add_subdirectory(record)
+add_subdirectory(index)
+add_executable(drmdb drmdb_main.cpp)
+target_link_libraries(drmdb Boost::filesystem Boost::system)
