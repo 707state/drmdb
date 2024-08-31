@@ -5,6 +5,7 @@ link_directories(${BOOST_LIBRARY_DIRS})
 
 add_subdirectory(common)
 add_subdirectory(parser)
+add_subdirectory(raft)
 add_subdirectory(storage)
 add_subdirectory(system)
 add_subdirectory(transaction)

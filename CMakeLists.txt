@@ -11,7 +11,7 @@ set(BOOST_LIBRARYDIR "${BOOST_ROOT}/stage/lib")
 set(Boost_USE_STATIC_LIBS ON)
 
 find_package(Boost 1.85.0 REQUIRED COMPONENTS filesystem system)
-
+include_directories(${Boost_INCLUDE_DIRS})
 # 强制使用 Boost 静态库
 
 set(Boost_USE_MULTITHREADED ON)

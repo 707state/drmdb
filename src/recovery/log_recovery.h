@@ -5,9 +5,7 @@
 #include "storage/buffer_pool_manager.h"
 #include "storage/disk_manager.h"
 #include "system/sm_manager.h"
-#include <map>
 #include <memory>
-#include <unordered_map>
 
 class RedoLogsInPage {
 public:
