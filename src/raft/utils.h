@@ -13,7 +13,7 @@ public:                                                                         
   __nocopy__(clazz)
 
 #define auto_lock(lock)                                                                                                \
-  std::lock_guard guard { loack }
+  std::lock_guard guard { lock }
 #define recur_lock(lock)                                                                                               \
   std::unique_lock guard { lock }
 #define size_int sizeof(int32)

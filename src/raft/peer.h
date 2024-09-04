@@ -35,8 +35,8 @@ public:
         snp_sync_ctx_(nullptr), lock_(), long_pause_warnings_(0), network_recoveries_(0), manual_free_(false),
         rpc_errs_(0), last_sent_idx_(0), cnt_not_applied_(0), leave_requested_(false), heartbeat_cnt_since_leave_(0),
         stepping_down_(false), reconn_scheduled_(false), reconn_backoff_(0), suppress_following_error_(false),
-        abandoned_(false), rsv_msg_(nullptr), rsv_msg_handler_(nullptr), l_(logger) {
-    reset_ls_timer();
+        abandoned_(false), rsv_msg_(nullptr), rsv_msg_handler_(nullptr), logger_(logger) {
+    reset_last_sent_timer();
     reset_resp_timer();
     reset_active_timer();
   }
@@ -206,6 +206,6 @@ private:
   std::atomic<bool> abandoned_;
   ptr<req_msg> rsv_msg_;
   rpc_handler rsv_msg_handler_;
-  ptr<logger> l_;
+  ptr<logger> logger_;
 };
 } // namespace raft

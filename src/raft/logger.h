@@ -13,7 +13,7 @@ public:
   virtual void err(const std::string &log_line) {}
   virtual void set_level(int l) {}
   virtual int get_level() { return 6; }
-  virtual void put_detils(int level, const char *source_file, const char *func_name, size_t line_number,
-                          const std::string &log_line) {}
+  virtual void put_details(int level, const char *source_file, const char *func_name, size_t line_number,
+                           const std::string &log_line) {}
 };
 } // namespace raft

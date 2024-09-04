@@ -18,7 +18,7 @@ public:
   void set_size(ulong size) { this->size_ = size; }
   type get_type() const { return type_; }
   void set_type(type src) { type_ = src; }
-  const ptr<cluster_config> &get_last_config() const { return last_cofig_; }
+  const ptr<cluster_config> &get_last_config() const { return last_config_; }
   static ptr<snapshot> deserialize(buffer &buf);
   static ptr<snapshot> deserialize(buffer_serializer &bs);
   ptr<buffer> serialize();
@@ -27,7 +27,7 @@ private:
   ulong last_log_idx_;
   ulong last_log_term_;
   ulong size_;
-  ptr<cluster_config> last_cofig_;
+  ptr<cluster_config> last_config_;
   type type_;
 };
 } // namespace raft
