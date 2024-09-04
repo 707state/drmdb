@@ -74,21 +74,17 @@
 #include <iostream>
 #include <memory>
 #include <fstream>
-
+#include<spdlog/spdlog.h>
+#include<fmt/format.h>
 int yylex(YYSTYPE *yylval, YYLTYPE *yylloc);
 
 void yyerror(YYLTYPE *locp, const char* s) {
-    std::cerr << "Parser Error at line " << locp->first_line << " column " << locp->first_column << ": " << s << std::endl;
-    // 将报错信息写入output.txt
-    std::fstream outfile;
-    outfile.open("output.txt",std::ios::out | std::ios::app);
-    outfile << "failure\n";
-    outfile.close();
+spdlog::error(fmt::format("Parser error at line: {}, column {} : {}\n",locp->first_line,locp->first_column,s)); 
 }
 
 using namespace ast;
 
-#line 92 "yacc.tab.cpp"
+#line 88 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -613,16 +609,16 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    71,    71,    76,    81,    86,    91,    99,   100,   101,
-     102,   106,   110,   114,   118,   125,   129,   136,   140,   144,
-     148,   152,   159,   163,   167,   171,   175,   182,   186,   190,
-     194,   202,   206,   210,   214,   218,   225,   230,   235,   239,
-     246,   250,   254,   258,   265,   269,   276,   283,   287,   291,
-     296,   303,   307,   314,   318,   322,   326,   333,   340,   341,
-     348,   352,   359,   360,   367,   371,   378,   382,   386,   390,
-     394,   398,   405,   409,   416,   420,   427,   432,   439,   443,
-     447,   454,   458,   462,   470,   475,   479,   483,   488,   495,
-     502,   503,   504,   507,   509,   511
+       0,    67,    67,    72,    77,    82,    87,    95,    96,    97,
+      98,   102,   106,   110,   114,   121,   125,   132,   136,   140,
+     144,   148,   155,   159,   163,   167,   171,   178,   182,   186,
+     190,   198,   202,   206,   210,   214,   221,   226,   231,   235,
+     242,   246,   250,   254,   261,   265,   272,   279,   283,   287,
+     292,   299,   303,   310,   314,   318,   322,   329,   336,   337,
+     344,   348,   355,   356,   363,   367,   374,   378,   382,   386,
+     390,   394,   401,   405,   412,   416,   423,   428,   435,   439,
+     443,   450,   454,   458,   466,   471,   475,   479,   484,   491,
+     498,   499,   500,   503,   505,   507
 };
 #endif
 
@@ -1695,684 +1691,684 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* start: stmt ';'  */
-#line 72 "yacc.y"
+#line 68 "yacc.y"
     {
         parse_tree = (yyvsp[-1].sv_node);
         YYACCEPT;
     }
-#line 1704 "yacc.tab.cpp"
+#line 1700 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 3: /* start: HELP  */
-#line 77 "yacc.y"
+#line 73 "yacc.y"
     {
         parse_tree = std::make_shared<Help>();
         YYACCEPT;
     }
-#line 1713 "yacc.tab.cpp"
+#line 1709 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 4: /* start: EXIT  */
-#line 82 "yacc.y"
+#line 78 "yacc.y"
     {
         parse_tree = nullptr;
         YYACCEPT;
     }
-#line 1722 "yacc.tab.cpp"
+#line 1718 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 5: /* start: T_EOF  */
-#line 87 "yacc.y"
+#line 83 "yacc.y"
     {
         parse_tree = nullptr;
         YYACCEPT;
     }
-#line 1731 "yacc.tab.cpp"
+#line 1727 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 6: /* start: SET OUTPUT_FILE OFF  */
-#line 92 "yacc.y"
+#line 88 "yacc.y"
     {
         parse_tree = std::make_shared<SetOutputFileOff>();
         YYACCEPT;
     }
-#line 1740 "yacc.tab.cpp"
+#line 1736 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 11: /* txnStmt: TXN_BEGIN  */
-#line 107 "yacc.y"
+#line 103 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<TxnBegin>();
     }
-#line 1748 "yacc.tab.cpp"
+#line 1744 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 12: /* txnStmt: TXN_COMMIT  */
-#line 111 "yacc.y"
+#line 107 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<TxnCommit>();
     }
-#line 1756 "yacc.tab.cpp"
+#line 1752 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 13: /* txnStmt: TXN_ABORT  */
-#line 115 "yacc.y"
+#line 111 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<TxnAbort>();
     }
-#line 1764 "yacc.tab.cpp"
+#line 1760 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 14: /* txnStmt: TXN_ROLLBACK  */
-#line 119 "yacc.y"
+#line 115 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<TxnRollback>();
     }
-#line 1772 "yacc.tab.cpp"
+#line 1768 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 15: /* dbStmt: SHOW TABLES  */
-#line 126 "yacc.y"
+#line 122 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<ShowTables>();
     }
-#line 1780 "yacc.tab.cpp"
+#line 1776 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 16: /* dbStmt: SHOW INDEX FROM tbName  */
-#line 130 "yacc.y"
+#line 126 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<ShowIndex>((yyvsp[0].sv_str));
     }
-#line 1788 "yacc.tab.cpp"
+#line 1784 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 17: /* ddl: CREATE TABLE tbName '(' fieldList ')'  */
-#line 137 "yacc.y"
+#line 133 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<CreateTable>((yyvsp[-3].sv_str), (yyvsp[-1].sv_fields));
     }
-#line 1796 "yacc.tab.cpp"
+#line 1792 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 18: /* ddl: DROP TABLE tbName  */
-#line 141 "yacc.y"
+#line 137 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<DropTable>((yyvsp[0].sv_str));
     }
-#line 1804 "yacc.tab.cpp"
+#line 1800 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 19: /* ddl: DESC tbName  */
-#line 145 "yacc.y"
+#line 141 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<DescTable>((yyvsp[0].sv_str));
     }
-#line 1812 "yacc.tab.cpp"
+#line 1808 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 20: /* ddl: CREATE INDEX tbName '(' colNameList ')'  */
-#line 149 "yacc.y"
+#line 145 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<CreateIndex>((yyvsp[-3].sv_str), (yyvsp[-1].sv_strs));
     }
-#line 1820 "yacc.tab.cpp"
+#line 1816 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 21: /* ddl: DROP INDEX tbName '(' colNameList ')'  */
-#line 153 "yacc.y"
+#line 149 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<DropIndex>((yyvsp[-3].sv_str), (yyvsp[-1].sv_strs));
     }
-#line 1828 "yacc.tab.cpp"
+#line 1824 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 22: /* dml: INSERT INTO tbName VALUES '(' valueList ')'  */
-#line 160 "yacc.y"
+#line 156 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<InsertStmt>((yyvsp[-4].sv_str), (yyvsp[-1].sv_vals));
     }
-#line 1836 "yacc.tab.cpp"
+#line 1832 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 23: /* dml: LOAD LOAD_PATH INTO tbName  */
-#line 164 "yacc.y"
+#line 160 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<LoadStmt>((yyvsp[-2].sv_str), (yyvsp[0].sv_str));
     }
-#line 1844 "yacc.tab.cpp"
+#line 1840 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 24: /* dml: DELETE FROM tbName optWhereClause  */
-#line 168 "yacc.y"
+#line 164 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<DeleteStmt>((yyvsp[-1].sv_str), (yyvsp[0].sv_conds));
     }
-#line 1852 "yacc.tab.cpp"
+#line 1848 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 25: /* dml: UPDATE tbName SET setClauses optWhereClause  */
-#line 172 "yacc.y"
+#line 168 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<UpdateStmt>((yyvsp[-3].sv_str), (yyvsp[-1].sv_set_clauses), (yyvsp[0].sv_conds));
     }
-#line 1860 "yacc.tab.cpp"
+#line 1856 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 26: /* dml: SELECT selector FROM tableList optWhereClause optGroupByClause optHavingClause opt_order_clauses  */
-#line 176 "yacc.y"
+#line 172 "yacc.y"
     {
         (yyval.sv_node) = std::make_shared<SelectStmt>((yyvsp[-6].sv_cols), (yyvsp[-4].sv_strs), (yyvsp[-3].sv_conds), (yyvsp[-2].sv_cols), (yyvsp[-1].sv_conds), (yyvsp[0].op_sv_orderbys));
     }
-#line 1868 "yacc.tab.cpp"
+#line 1864 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 27: /* selector: '*'  */
-#line 183 "yacc.y"
+#line 179 "yacc.y"
     {
         (yyval.sv_cols) = {};
     }
-#line 1876 "yacc.tab.cpp"
+#line 1872 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 29: /* colList: col  */
-#line 191 "yacc.y"
+#line 187 "yacc.y"
     {
         (yyval.sv_cols) = std::vector<std::shared_ptr<Col>>{(yyvsp[0].sv_col)};
     }
-#line 1884 "yacc.tab.cpp"
+#line 1880 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 30: /* colList: colList ',' col  */
-#line 195 "yacc.y"
+#line 191 "yacc.y"
     {
         (yyval.sv_cols).push_back((yyvsp[0].sv_col));
     }
-#line 1892 "yacc.tab.cpp"
+#line 1888 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 31: /* col: tbName '.' colName optAsClause  */
-#line 203 "yacc.y"
+#line 199 "yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-3].sv_str), (yyvsp[-1].sv_str), SV_AGGRE_NONE, (yyvsp[0].sv_str));
     }
-#line 1900 "yacc.tab.cpp"
+#line 1896 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 32: /* col: colName optAsClause  */
-#line 207 "yacc.y"
+#line 203 "yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-1].sv_str), SV_AGGRE_NONE, (yyvsp[0].sv_str));
     }
-#line 1908 "yacc.tab.cpp"
+#line 1904 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 33: /* col: AGGREGATOR '(' tbName '.' colName ')' optAsClause  */
-#line 211 "yacc.y"
+#line 207 "yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>((yyvsp[-4].sv_str), (yyvsp[-2].sv_str), (yyvsp[-6].sv_ag_type), (yyvsp[0].sv_str));
     }
-#line 1916 "yacc.tab.cpp"
+#line 1912 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 34: /* col: AGGREGATOR '(' '*' ')' optAsClause  */
-#line 215 "yacc.y"
+#line 211 "yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", "", (yyvsp[-4].sv_ag_type), (yyvsp[0].sv_str));
     }
-#line 1924 "yacc.tab.cpp"
+#line 1920 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 35: /* col: AGGREGATOR '(' colName ')' optAsClause  */
-#line 219 "yacc.y"
+#line 215 "yacc.y"
     {
         (yyval.sv_col) = std::make_shared<Col>("", (yyvsp[-2].sv_str), (yyvsp[-4].sv_ag_type), (yyvsp[0].sv_str));
     }
-#line 1932 "yacc.tab.cpp"
+#line 1928 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 36: /* AGGREGATOR: SUM  */
-#line 226 "yacc.y"
+#line 222 "yacc.y"
     {
         (yyval.sv_ag_type) = SV_AGGRE_SUM;
     }
-#line 1940 "yacc.tab.cpp"
+#line 1936 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 37: /* AGGREGATOR: COUNT  */
-#line 231 "yacc.y"
+#line 227 "yacc.y"
     {
         (yyval.sv_ag_type) = SV_AGGRE_COUNT;
     }
-#line 1948 "yacc.tab.cpp"
+#line 1944 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 38: /* AGGREGATOR: MAX  */
-#line 236 "yacc.y"
+#line 232 "yacc.y"
     {
         (yyval.sv_ag_type) = SV_AGGRE_MAX;
     }
-#line 1956 "yacc.tab.cpp"
+#line 1952 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 39: /* AGGREGATOR: MIN  */
-#line 240 "yacc.y"
+#line 236 "yacc.y"
     {
         (yyval.sv_ag_type) = SV_AGGRE_MIN;
     }
-#line 1964 "yacc.tab.cpp"
+#line 1960 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 40: /* optAsClause: AS asName  */
-#line 247 "yacc.y"
+#line 243 "yacc.y"
     {
         (yyval.sv_str) = (yyvsp[0].sv_str);
     }
-#line 1972 "yacc.tab.cpp"
+#line 1968 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 41: /* optAsClause: %empty  */
-#line 250 "yacc.y"
+#line 246 "yacc.y"
                     { /* ignore*/ }
-#line 1978 "yacc.tab.cpp"
+#line 1974 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 42: /* fieldList: field  */
-#line 255 "yacc.y"
+#line 251 "yacc.y"
     {
         (yyval.sv_fields) = std::vector<std::shared_ptr<Field>>{(yyvsp[0].sv_field)};
     }
-#line 1986 "yacc.tab.cpp"
+#line 1982 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 43: /* fieldList: fieldList ',' field  */
-#line 259 "yacc.y"
+#line 255 "yacc.y"
     {
         (yyval.sv_fields).push_back((yyvsp[0].sv_field));
     }
-#line 1994 "yacc.tab.cpp"
+#line 1990 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 44: /* colNameList: colName  */
-#line 266 "yacc.y"
+#line 262 "yacc.y"
     {
         (yyval.sv_strs) = std::vector<std::string>{(yyvsp[0].sv_str)};
     }
-#line 2002 "yacc.tab.cpp"
+#line 1998 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 45: /* colNameList: colNameList ',' colName  */
-#line 270 "yacc.y"
+#line 266 "yacc.y"
     {
         (yyval.sv_strs).push_back((yyvsp[0].sv_str));
     }
-#line 2010 "yacc.tab.cpp"
+#line 2006 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 46: /* field: colName type  */
-#line 277 "yacc.y"
+#line 273 "yacc.y"
     {
         (yyval.sv_field) = std::make_shared<ColDef>((yyvsp[-1].sv_str), (yyvsp[0].sv_type_len));
     }
-#line 2018 "yacc.tab.cpp"
+#line 2014 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 47: /* type: INT  */
-#line 284 "yacc.y"
+#line 280 "yacc.y"
     {
         (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_INT, sizeof(int));
     }
-#line 2026 "yacc.tab.cpp"
+#line 2022 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 48: /* type: CHAR '(' VALUE_INT ')'  */
-#line 288 "yacc.y"
+#line 284 "yacc.y"
     {
         (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_STRING, (yyvsp[-1].sv_int));
     }
-#line 2034 "yacc.tab.cpp"
+#line 2030 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 49: /* type: FLOAT  */
-#line 292 "yacc.y"
+#line 288 "yacc.y"
     {
         (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_FLOAT, sizeof(float));
     }
-#line 2042 "yacc.tab.cpp"
+#line 2038 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 50: /* type: DATETIME  */
-#line 297 "yacc.y"
+#line 293 "yacc.y"
     {
         (yyval.sv_type_len) = std::make_shared<TypeLen>(SV_TYPE_DATETIME, sizeof(uint64_t));
     }
-#line 2050 "yacc.tab.cpp"
+#line 2046 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 51: /* valueList: value  */
-#line 304 "yacc.y"
+#line 300 "yacc.y"
     {
         (yyval.sv_vals) = std::vector<std::shared_ptr<Value>>{(yyvsp[0].sv_val)};
     }
-#line 2058 "yacc.tab.cpp"
+#line 2054 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 52: /* valueList: valueList ',' value  */
-#line 308 "yacc.y"
+#line 304 "yacc.y"
     {
         (yyval.sv_vals).push_back((yyvsp[0].sv_val));
     }
-#line 2066 "yacc.tab.cpp"
+#line 2062 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 53: /* value: VALUE_INT  */
-#line 315 "yacc.y"
+#line 311 "yacc.y"
     {
         (yyval.sv_val) = std::make_shared<IntLit>((yyvsp[0].sv_int));
     }
-#line 2074 "yacc.tab.cpp"
+#line 2070 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 54: /* value: VALUE_FLOAT  */
-#line 319 "yacc.y"
+#line 315 "yacc.y"
     {
         (yyval.sv_val) = std::make_shared<FloatLit>((yyvsp[0].sv_float));
     }
-#line 2082 "yacc.tab.cpp"
+#line 2078 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 55: /* value: VALUE_STRING  */
-#line 323 "yacc.y"
+#line 319 "yacc.y"
     {
         (yyval.sv_val) = std::make_shared<StringLit>((yyvsp[0].sv_str));
     }
-#line 2090 "yacc.tab.cpp"
+#line 2086 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 56: /* value: VALUE_DATETIME  */
-#line 327 "yacc.y"
+#line 323 "yacc.y"
     {
         (yyval.sv_val) = std::make_shared<DateTimeLit>((yyvsp[0].sv_str));
     }
-#line 2098 "yacc.tab.cpp"
+#line 2094 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 57: /* condition: col op expr  */
-#line 334 "yacc.y"
+#line 330 "yacc.y"
     {
         (yyval.sv_cond) = std::make_shared<BinaryExpr>((yyvsp[-2].sv_col), (yyvsp[-1].sv_comp_op), (yyvsp[0].sv_expr));
     }
-#line 2106 "yacc.tab.cpp"
+#line 2102 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 58: /* optWhereClause: %empty  */
-#line 340 "yacc.y"
+#line 336 "yacc.y"
                       { /* ignore*/ }
-#line 2112 "yacc.tab.cpp"
+#line 2108 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 59: /* optWhereClause: WHERE whereClause  */
-#line 342 "yacc.y"
+#line 338 "yacc.y"
     {
         (yyval.sv_conds) = (yyvsp[0].sv_conds);
     }
-#line 2120 "yacc.tab.cpp"
+#line 2116 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 60: /* whereClause: condition  */
-#line 349 "yacc.y"
+#line 345 "yacc.y"
     {
         (yyval.sv_conds) = std::vector<std::shared_ptr<BinaryExpr>>{(yyvsp[0].sv_cond)};
     }
-#line 2128 "yacc.tab.cpp"
+#line 2124 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 61: /* whereClause: whereClause AND condition  */
-#line 353 "yacc.y"
+#line 349 "yacc.y"
     {
         (yyval.sv_conds).push_back((yyvsp[0].sv_cond));
     }
-#line 2136 "yacc.tab.cpp"
+#line 2132 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 62: /* optHavingClause: %empty  */
-#line 359 "yacc.y"
+#line 355 "yacc.y"
                      { /* ignore*/ }
-#line 2142 "yacc.tab.cpp"
+#line 2138 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 63: /* optHavingClause: HAVING havingClause  */
-#line 361 "yacc.y"
+#line 357 "yacc.y"
    {
        (yyval.sv_conds) = (yyvsp[0].sv_conds);
    }
-#line 2150 "yacc.tab.cpp"
+#line 2146 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 64: /* havingClause: condition  */
-#line 368 "yacc.y"
+#line 364 "yacc.y"
     {
         (yyval.sv_conds) = std::vector<std::shared_ptr<BinaryExpr>>{(yyvsp[0].sv_cond)};
     }
-#line 2158 "yacc.tab.cpp"
+#line 2154 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 65: /* havingClause: havingClause AND condition  */
-#line 372 "yacc.y"
+#line 368 "yacc.y"
     {
         (yyval.sv_conds).push_back((yyvsp[0].sv_cond));
     }
-#line 2166 "yacc.tab.cpp"
+#line 2162 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 66: /* op: '='  */
-#line 379 "yacc.y"
+#line 375 "yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_EQ;
     }
-#line 2174 "yacc.tab.cpp"
+#line 2170 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 67: /* op: '<'  */
-#line 383 "yacc.y"
+#line 379 "yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_LT;
     }
-#line 2182 "yacc.tab.cpp"
+#line 2178 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 68: /* op: '>'  */
-#line 387 "yacc.y"
+#line 383 "yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_GT;
     }
-#line 2190 "yacc.tab.cpp"
+#line 2186 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 69: /* op: NEQ  */
-#line 391 "yacc.y"
+#line 387 "yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_NE;
     }
-#line 2198 "yacc.tab.cpp"
+#line 2194 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 70: /* op: LEQ  */
-#line 395 "yacc.y"
+#line 391 "yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_LE;
     }
-#line 2206 "yacc.tab.cpp"
+#line 2202 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 71: /* op: GEQ  */
-#line 399 "yacc.y"
+#line 395 "yacc.y"
     {
         (yyval.sv_comp_op) = SV_OP_GE;
     }
-#line 2214 "yacc.tab.cpp"
+#line 2210 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 72: /* expr: value  */
-#line 406 "yacc.y"
+#line 402 "yacc.y"
     {
         (yyval.sv_expr) = std::static_pointer_cast<Expr>((yyvsp[0].sv_val));
     }
-#line 2222 "yacc.tab.cpp"
+#line 2218 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 73: /* expr: col  */
-#line 410 "yacc.y"
+#line 406 "yacc.y"
     {
         (yyval.sv_expr) = std::static_pointer_cast<Expr>((yyvsp[0].sv_col));
     }
-#line 2230 "yacc.tab.cpp"
+#line 2226 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 74: /* setClauses: setClause  */
-#line 417 "yacc.y"
+#line 413 "yacc.y"
     {
         (yyval.sv_set_clauses) = std::vector<std::shared_ptr<SetClause>>{(yyvsp[0].sv_set_clause)};
     }
-#line 2238 "yacc.tab.cpp"
+#line 2234 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 75: /* setClauses: setClauses ',' setClause  */
-#line 421 "yacc.y"
+#line 417 "yacc.y"
     {
         (yyval.sv_set_clauses).push_back((yyvsp[0].sv_set_clause));
     }
-#line 2246 "yacc.tab.cpp"
+#line 2242 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 76: /* setClause: colName '=' value  */
-#line 428 "yacc.y"
+#line 424 "yacc.y"
     {
         (yyval.sv_set_clause) = std::make_shared<SetClause>((yyvsp[-2].sv_str), (yyvsp[0].sv_val));
     }
-#line 2254 "yacc.tab.cpp"
+#line 2250 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 77: /* setClause: colName '=' colName '+' value  */
-#line 433 "yacc.y"
+#line 429 "yacc.y"
     {
         (yyval.sv_set_clause) = std::make_shared<SetClause>((yyvsp[-4].sv_str), (yyvsp[0].sv_val), true);
     }
-#line 2262 "yacc.tab.cpp"
+#line 2258 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 78: /* optGroupByClause: groupByClause  */
-#line 440 "yacc.y"
+#line 436 "yacc.y"
     {
         (yyval.sv_cols) = (yyvsp[0].sv_cols);
     }
-#line 2270 "yacc.tab.cpp"
+#line 2266 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 79: /* optGroupByClause: %empty  */
-#line 443 "yacc.y"
+#line 439 "yacc.y"
                     { /* ignore*/ }
-#line 2276 "yacc.tab.cpp"
+#line 2272 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 80: /* groupByClause: GROUP BY colList  */
-#line 448 "yacc.y"
+#line 444 "yacc.y"
     {
         (yyval.sv_cols) = (yyvsp[0].sv_cols);
     }
-#line 2284 "yacc.tab.cpp"
+#line 2280 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 81: /* tableList: tbName  */
-#line 455 "yacc.y"
+#line 451 "yacc.y"
     {
         (yyval.sv_strs) = std::vector<std::string>{(yyvsp[0].sv_str)};
     }
-#line 2292 "yacc.tab.cpp"
+#line 2288 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 82: /* tableList: tableList ',' tbName  */
+#line 455 "yacc.y"
+    {
+        (yyval.sv_strs).push_back((yyvsp[0].sv_str));
+    }
+#line 2296 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
+    break;
+
+  case 83: /* tableList: tableList JOIN tbName  */
 #line 459 "yacc.y"
     {
         (yyval.sv_strs).push_back((yyvsp[0].sv_str));
     }
-#line 2300 "yacc.tab.cpp"
-    break;
-
-  case 83: /* tableList: tableList JOIN tbName  */
-#line 463 "yacc.y"
-    {
-        (yyval.sv_strs).push_back((yyvsp[0].sv_str));
-    }
-#line 2308 "yacc.tab.cpp"
+#line 2304 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 84: /* opt_order_clauses: ORDER BY order_clauses  */
-#line 471 "yacc.y"
+#line 467 "yacc.y"
     {
         (yyval.op_sv_orderbys) = std::pair<std::vector<std::shared_ptr<OrderBy>>, int>{(yyvsp[0].sv_orderbys), -1};
     }
-#line 2316 "yacc.tab.cpp"
+#line 2312 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 85: /* opt_order_clauses: ORDER BY order_clauses LIMIT VALUE_INT  */
-#line 476 "yacc.y"
+#line 472 "yacc.y"
     {
         (yyval.op_sv_orderbys) = std::pair<std::vector<std::shared_ptr<OrderBy>>, int>{(yyvsp[-2].sv_orderbys), (yyvsp[0].sv_int)};
     }
-#line 2324 "yacc.tab.cpp"
+#line 2320 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 86: /* opt_order_clauses: %empty  */
-#line 479 "yacc.y"
+#line 475 "yacc.y"
                     { /* ignore*/ }
-#line 2330 "yacc.tab.cpp"
+#line 2326 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 87: /* order_clauses: order_clause  */
-#line 484 "yacc.y"
+#line 480 "yacc.y"
     {
         (yyval.sv_orderbys) = std::vector<std::shared_ptr<OrderBy>>{(yyvsp[0].sv_orderby)};
     }
-#line 2338 "yacc.tab.cpp"
+#line 2334 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 88: /* order_clauses: order_clauses ',' order_clause  */
-#line 489 "yacc.y"
+#line 485 "yacc.y"
     {
         (yyval.sv_orderbys).push_back((yyvsp[0].sv_orderby));
     }
-#line 2346 "yacc.tab.cpp"
+#line 2342 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 89: /* order_clause: col opt_asc_desc  */
-#line 496 "yacc.y"
+#line 492 "yacc.y"
     {
         (yyval.sv_orderby) = std::make_shared<OrderBy>((yyvsp[-1].sv_col), (yyvsp[0].sv_orderby_dir));
     }
-#line 2354 "yacc.tab.cpp"
+#line 2350 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 90: /* opt_asc_desc: ASC  */
-#line 502 "yacc.y"
+#line 498 "yacc.y"
                  { (yyval.sv_orderby_dir) = OrderBy_ASC;     }
-#line 2360 "yacc.tab.cpp"
+#line 2356 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 91: /* opt_asc_desc: DESC  */
-#line 503 "yacc.y"
+#line 499 "yacc.y"
                  { (yyval.sv_orderby_dir) = OrderBy_DESC;    }
-#line 2366 "yacc.tab.cpp"
+#line 2362 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
   case 92: /* opt_asc_desc: %empty  */
-#line 504 "yacc.y"
+#line 500 "yacc.y"
             { (yyval.sv_orderby_dir) = OrderBy_DEFAULT; }
-#line 2372 "yacc.tab.cpp"
+#line 2368 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
     break;
 
 
-#line 2376 "yacc.tab.cpp"
+#line 2372 "/home/jask/codes/drmdb/src/parser/yacc.tab.cpp"
 
       default: break;
     }
@@ -2601,6 +2597,6 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 512 "yacc.y"
+#line 508 "yacc.y"
 
 
