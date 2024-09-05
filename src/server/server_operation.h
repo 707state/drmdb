@@ -1,5 +1,4 @@
 #pragma once
-#include "boost/charconv.hpp"
 #include "in_memory_state_mgr.h"
 #include "logger_wrapper.h"
 #include "raft/buffer.hxx"
@@ -13,15 +12,13 @@
 #include <server/server_params.h>
 #include <spdlog/spdlog.h>
 #include <string>
-#include <system_error>
-#include <utility>
 #include <vector>
 using namespace nuraft;
+namespace nuraft {
 using raft_result = cmd_result<ptr<buffer>>;
-namespace raft {
 static raft_params::return_method_type CALL_TYPE = raft_params::blocking;
 
-}
+} // namespace nuraft
 struct server_stuff {
     server_stuff()
         : server_id_(1)
@@ -138,11 +135,11 @@ void loop() {
 void init_raft(ptr<state_machine> sm_instance) {
     // Logger.
     std::string log_file_name = "./srv" + std::to_string(stuff.server_id_) + ".log";
-    ptr<logger_wrapper> log_wrap = cs_new<logger_wrapper>(log_file_name, 4);
+    ptr<logger_wrapper> log_wrap = new_ptr<logger_wrapper>(log_file_name, 4);
     stuff.raft_logger_ = log_wrap;
 
     // State machine.
-    stuff.smgr_ = cs_new<inmem_state_mgr>(stuff.server_id_, stuff.endpoint_);
+    stuff.smgr_ = new_ptr<inmem_state_mgr>(stuff.server_id_, stuff.endpoint_);
     // State manager.
     stuff.sm_ = sm_instance;
 
@@ -171,7 +168,7 @@ void init_raft(ptr<state_machine> sm_instance) {
     params.client_req_timeout_ = 3000;
     // According to this method, `append_log` function
     // should be handled differently.
-    params.return_method_ = raft::CALL_TYPE;
+    params.return_method_ = nuraft::CALL_TYPE;
 
     // Initialize Raft server.
     stuff.raft_instance_ = stuff.launcher_.init(

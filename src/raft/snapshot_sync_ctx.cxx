@@ -92,7 +92,7 @@ bool snapshot_io_mgr::push(ptr<snapshot_io_mgr::io_queue_elem>& elem) {
 bool snapshot_io_mgr::push(ptr<raft_server> r,
                            ptr<peer> p,
                            std::function<void(ptr<resp_msg>&, ptr<rpc_exception>&)>& h) {
-    ptr<io_queue_elem> elem = cs_new<io_queue_elem>(
+    ptr<io_queue_elem> elem = new_ptr<io_queue_elem>(
         r, p->get_snapshot_sync_ctx()->get_snapshot(), p->get_snapshot_sync_ctx(), p, h);
     return push(elem);
 }
@@ -216,14 +216,14 @@ void snapshot_io_mgr::async_io_loop() {
 
             std::unique_ptr<snapshot_sync_req> sync_req(
                 new snapshot_sync_req(elem->snapshot_, obj_idx, data, is_last_request));
-            ptr<req_msg> req(cs_new<req_msg>(term,
-                                             msg_type::install_snapshot_request,
-                                             elem->raft_->id_,
-                                             dst_id,
-                                             elem->snapshot_->get_last_log_term(),
-                                             elem->snapshot_->get_last_log_idx(),
-                                             commit_idx));
-            req->log_entries().push_back(cs_new<log_entry>(
+            ptr<req_msg> req(new_ptr<req_msg>(term,
+                                              msg_type::install_snapshot_request,
+                                              elem->raft_->id_,
+                                              dst_id,
+                                              elem->snapshot_->get_last_log_term(),
+                                              elem->snapshot_->get_last_log_idx(),
+                                              commit_idx));
+            req->log_entries().push_back(new_ptr<log_entry>(
                 term, sync_req->serialize(), log_val_type::snp_sync_req));
             if (elem->dst_->make_busy()) {
                 elem->dst_->set_rsv_msg(nullptr, nullptr);

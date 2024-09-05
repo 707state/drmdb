@@ -12,5 +12,13 @@ add_subdirectory(transaction)
 add_subdirectory(record)
 add_subdirectory(index)
 add_subdirectory(server)
-add_executable(drmdb drmdb_main.cpp)
-target_link_libraries(drmdb Boost::filesystem Boost::system)
+add_executable(drmdb server.cpp)
+target_link_libraries(
+  drmdb
+  raft
+  storage
+  system
+  transaction
+  record
+  index
+  server)

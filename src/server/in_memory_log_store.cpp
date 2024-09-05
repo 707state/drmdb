@@ -13,7 +13,7 @@ inmem_log_store::inmem_log_store()
     , disk_emul_last_durable_index_(0) {
     // Dummy entry for index 0.
     ptr<buffer> buf = buffer::alloc(sz_ulong);
-    logs_[0] = cs_new<log_entry>(0, buf);
+    logs_[0] = new_ptr<log_entry>(0, buf);
 }
 
 inmem_log_store::~inmem_log_store() {
@@ -30,10 +30,10 @@ ptr<log_entry> inmem_log_store::make_clone(const ptr<log_entry>& entry) {
     // NOTE:
     //   Timestamp is used only when `replicate_log_timestamp_` option is on.
     //   Otherwise, log store does not need to store or load it.
-    ptr<log_entry> clone = cs_new<log_entry>(entry->get_term(),
-                                             buffer::clone(entry->get_buf()),
-                                             entry->get_val_type(),
-                                             entry->get_timestamp());
+    ptr<log_entry> clone = new_ptr<log_entry>(entry->get_term(),
+                                              buffer::clone(entry->get_buf()),
+                                              entry->get_val_type(),
+                                              entry->get_timestamp());
     return clone;
 }
 
@@ -101,7 +101,7 @@ void inmem_log_store::write_at(ulong index, ptr<log_entry>& entry) {
 }
 
 ptr<std::vector<ptr<log_entry>>> inmem_log_store::log_entries(ulong start, ulong end) {
-    ptr<std::vector<ptr<log_entry>>> ret = cs_new<std::vector<ptr<log_entry>>>();
+    ptr<std::vector<ptr<log_entry>>> ret = new_ptr<std::vector<ptr<log_entry>>>();
 
     ret->resize(end - start);
     ulong cc = 0;
@@ -123,7 +123,7 @@ ptr<std::vector<ptr<log_entry>>> inmem_log_store::log_entries(ulong start, ulong
 
 ptr<std::vector<ptr<log_entry>>>
 inmem_log_store::log_entries_ext(ulong start, ulong end, int64 batch_size_hint_in_bytes) {
-    ptr<std::vector<ptr<log_entry>>> ret = cs_new<std::vector<ptr<log_entry>>>();
+    ptr<std::vector<ptr<log_entry>>> ret = new_ptr<std::vector<ptr<log_entry>>>();
 
     if (batch_size_hint_in_bytes < 0) {
         return ret;

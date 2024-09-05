@@ -54,7 +54,7 @@ public:
         , busy_flag_(false)
         , pending_commit_flag_(false)
         , hb_enabled_(false)
-        , hb_task_(cs_new<timer_task<int32>, timer_task<int32>::executor&, int32>(
+        , hb_task_(new_ptr<timer_task<int32>, timer_task<int32>::executor&, int32>(
               hb_exec, config->get_id(), timer_task_type::heartbeat_timer))
         , snp_sync_ctx_(nullptr)
         , lock_()
@@ -150,7 +150,7 @@ public:
         if (s == nilptr) {
             snp_sync_ctx_.reset();
         } else {
-            snp_sync_ctx_ = cs_new<snapshot_sync_ctx>(s, get_id(), timeout_ms);
+            snp_sync_ctx_ = new_ptr<snapshot_sync_ctx>(s, get_id(), timeout_ms);
         }
     }
 

@@ -36,7 +36,7 @@ namespace nuraft {
 // --- custom_notification_msg ---
 
 ptr<custom_notification_msg> custom_notification_msg::deserialize(buffer& buf) {
-    ptr<custom_notification_msg> ret = cs_new<custom_notification_msg>();
+    ptr<custom_notification_msg> ret = new_ptr<custom_notification_msg>();
 
     buffer_serializer bs(buf);
     uint8_t version = bs.get_u8();
@@ -84,7 +84,7 @@ ptr<buffer> custom_notification_msg::serialize() const {
 // --- out_of_log_msg ---
 
 ptr<out_of_log_msg> out_of_log_msg::deserialize(buffer& buf) {
-    ptr<out_of_log_msg> ret = cs_new<out_of_log_msg>();
+    ptr<out_of_log_msg> ret = new_ptr<out_of_log_msg>();
 
     buffer_serializer bs(buf);
     uint8_t version = bs.get_u8();
@@ -110,7 +110,7 @@ ptr<buffer> out_of_log_msg::serialize() const {
 // --- force_vote_msg ---
 
 ptr<force_vote_msg> force_vote_msg::deserialize(buffer& buf) {
-    ptr<force_vote_msg> ret = cs_new<force_vote_msg>();
+    ptr<force_vote_msg> ret = new_ptr<force_vote_msg>();
     buffer_serializer bs(buf);
     uint8_t version = bs.get_u8();
     (void)version;
@@ -134,11 +134,11 @@ ptr<buffer> force_vote_msg::serialize() const {
 // --- handlers ---
 
 ptr<resp_msg> raft_server::handle_custom_notification_req(req_msg& req) {
-    ptr<resp_msg> resp = cs_new<resp_msg>(state_->get_term(),
-                                          msg_type::custom_notification_response,
-                                          id_,
-                                          req.get_src(),
-                                          log_store_->next_slot());
+    ptr<resp_msg> resp = new_ptr<resp_msg>(state_->get_term(),
+                                           msg_type::custom_notification_response,
+                                           id_,
+                                           req.get_src(),
+                                           log_store_->next_slot());
     resp->accept(log_store_->next_slot());
 
     std::vector<ptr<log_entry>>& log_entries = req.log_entries();

@@ -91,7 +91,7 @@ ptr<resp_msg> raft_server::handle_cli_req(req_msg& req,
     ulong cur_term = state_->get_term();
     ptr<raft_params> params = ctx_->get_params();
 
-    resp = cs_new<resp_msg>(cur_term, msg_type::append_entries_response, id_, leader_);
+    resp = new_ptr<resp_msg>(cur_term, msg_type::append_entries_response, id_, leader_);
     if (role_ != srv_role::leader || write_paused_) {
         resp->set_result_code(cmd_result_code::NOT_LEADER);
         return resp;
@@ -152,7 +152,7 @@ ptr<resp_msg> raft_server::handle_cli_req(req_msg& req,
     if (!get_config()->is_async_replication()) {
         // Sync replication:
         //   Set callback function for `last_idx`.
-        ptr<commit_ret_elem> elem = cs_new<commit_ret_elem>();
+        ptr<commit_ret_elem> elem = new_ptr<commit_ret_elem>();
         elem->idx_ = last_idx;
         elem->result_code_ = cmd_result_code::TIMEOUT;
 
@@ -180,7 +180,7 @@ ptr<resp_msg> raft_server::handle_cli_req(req_msg& req,
             case raft_params::async_handler:
                 // Async handler: create & set async result object.
                 if (!elem->async_result_) {
-                    elem->async_result_ = cs_new<cmd_result<ptr<buffer>>>();
+                    elem->async_result_ = new_ptr<cmd_result<ptr<buffer>>>();
                 }
                 resp->set_async_cb(std::bind(&raft_server::handle_cli_req_callback_async,
                                              this,
@@ -309,7 +309,7 @@ void raft_server::drop_all_pending_commit_elems() {
         p_wn("cancelled non-blocking client request %zu", ee->idx_);
 
         ptr<buffer> result = nullptr;
-        ptr<std::exception> err = cs_new<std::runtime_error>("Request cancelled.");
+        ptr<std::exception> err = new_ptr<std::runtime_error>("Request cancelled.");
         ee->async_result_->set_result(result, err, cmd_result_code::CANCELLED);
     }
 }

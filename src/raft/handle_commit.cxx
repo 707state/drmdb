@@ -361,7 +361,7 @@ void raft_server::commit_app_log(ulong idx_to_commit,
         if (need_to_check_commit_ret) {
             // If not found, commit thread is invoked earlier than user thread.
             // Create one here.
-            ptr<commit_ret_elem> elem = cs_new<commit_ret_elem>();
+            ptr<commit_ret_elem> elem = new_ptr<commit_ret_elem>();
             elem->idx_ = sm_idx;
             elem->result_code_ = cmd_result_code::OK;
             elem->ret_value_ = ret_value;
@@ -380,7 +380,7 @@ void raft_server::commit_app_log(ulong idx_to_commit,
                 //   Set the result, but should not put it into the
                 //   `async_elems` list, as the user thread (supposed to be
                 //   executed right after this) will invoke the callback immediately.
-                elem->async_result_ = cs_new<cmd_result<ptr<buffer>>>(elem->ret_value_);
+                elem->async_result_ = new_ptr<cmd_result<ptr<buffer>>>(elem->ret_value_);
                 break;
             }
             commit_ret_elems_.insert(std::make_pair(sm_idx, elem));
@@ -555,7 +555,7 @@ bool raft_server::snapshot_and_compact(ulong committed_idx, bool forced_creation
 
             ulong log_term_to_compact = log_store_->term_at(committed_idx);
             ptr<snapshot> new_snapshot(
-                cs_new<snapshot>(committed_idx, log_term_to_compact, conf));
+                new_ptr<snapshot>(committed_idx, log_term_to_compact, conf));
             p_in("create snapshot idx %ld log_term %ld\n",
                  committed_idx,
                  log_term_to_compact);
@@ -689,11 +689,11 @@ void raft_server::reconfigure(const ptr<cluster_config>& new_config) {
         ptr<srv_config> srv_added = *it;
         timer_task<int32>::executor exec = (timer_task<int32>::executor)std::bind(
             &raft_server::handle_hb_timeout, this, std::placeholders::_1);
-        ptr<peer> p = cs_new<peer,
-                             ptr<srv_config>&,
-                             context&,
-                             timer_task<int32>::executor&,
-                             ptr<logger>&>(srv_added, *ctx_, exec, l_);
+        ptr<peer> p = new_ptr<peer,
+                              ptr<srv_config>&,
+                              context&,
+                              timer_task<int32>::executor&,
+                              ptr<logger>&>(srv_added, *ctx_, exec, l_);
         p->set_next_log_idx(log_store_->next_slot());
 
         sprintf(temp_buf,

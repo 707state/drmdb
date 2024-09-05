@@ -40,7 +40,7 @@ void peer::send_req(ptr<peer> myself, ptr<req_msg>& req, rpc_handler& handler) {
              msg_type_to_string(req->get_type()).c_str());
     }
 
-    ptr<rpc_result> pending = cs_new<rpc_result>(handler);
+    ptr<rpc_result> pending = new_ptr<rpc_result>(handler);
     ptr<rpc_client> rpc_local = nullptr;
     {
         std::lock_guard<std::mutex> l(rpc_protector_);

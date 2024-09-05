@@ -144,7 +144,7 @@ raft_server::raft_server(context* ctx, const init_options& opt)
     lagging_sm_target_index_ = log_store_->next_slot() - 1;
 
     if (!state_) {
-        state_ = cs_new<srv_state>();
+        state_ = new_ptr<srv_state>();
         state_->set_term(0);
         state_->set_voted_for(-1);
     }
@@ -216,12 +216,13 @@ raft_server::raft_server(context* ctx, const init_options& opt)
         if (cur_srv->get_id() != id_) {
             timer_task<int32>::executor exec = (timer_task<int32>::executor)std::bind(
                 &raft_server::handle_hb_timeout, this, std::placeholders::_1);
-            peers_.insert(std::make_pair(cur_srv->get_id(),
-                                         cs_new<peer,
-                                                ptr<srv_config>&,
-                                                context&,
-                                                timer_task<int32>::executor&,
-                                                ptr<logger>&>(cur_srv, *ctx_, exec, l_)));
+            peers_.insert(
+                std::make_pair(cur_srv->get_id(),
+                               new_ptr<peer,
+                                       ptr<srv_config>&,
+                                       context&,
+                                       timer_task<int32>::executor&,
+                                       ptr<logger>&>(cur_srv, *ctx_, exec, l_)));
         } else {
             // Myself.
             im_learner_ = cur_srv->is_learner();
@@ -346,7 +347,7 @@ void raft_server::update_rand_timeout() {
 void raft_server::update_params(const raft_params& new_params) {
     recur_lock(lock_);
 
-    ptr<raft_params> clone = cs_new<raft_params>(new_params);
+    ptr<raft_params> clone = new_ptr<raft_params>(new_params);
     ctx_->set_params(clone);
     apply_and_log_current_params();
 
@@ -704,7 +705,7 @@ ptr<resp_msg> raft_server::process_req(req_msg& req, const req_ext_params& ext_p
 
     } else if (req.get_type() == msg_type::ping_request) {
         p_in("got ping from %d", req.get_src());
-        resp = cs_new<resp_msg>(
+        resp = new_ptr<resp_msg>(
             state_->get_term(), msg_type::ping_response, id_, req.get_src());
 
     } else if (req.get_type() == msg_type::priority_change_request) {
@@ -741,8 +742,8 @@ void raft_server::reset_peer_info() {
             return;
         }
 
-        ptr<cluster_config> my_next_config =
-            cs_new<cluster_config>(c_config->get_log_idx(), c_config->get_prev_log_idx());
+        ptr<cluster_config> my_next_config = new_ptr<cluster_config>(
+            c_config->get_log_idx(), c_config->get_prev_log_idx());
         my_next_config->get_servers().push_back(my_srv_config);
         my_next_config->set_user_ctx(c_config->get_user_ctx());
         my_next_config->set_async_replication(c_config->is_async_replication());
@@ -754,10 +755,10 @@ void raft_server::reset_peer_info() {
         // It will be rolled back and overwritten if this node
         // re-joins the cluster.
         ptr<buffer> new_conf_buf(my_next_config->serialize());
-        ptr<log_entry> entry(cs_new<log_entry>(state_->get_term(),
-                                               new_conf_buf,
-                                               log_val_type::conf,
-                                               timer_helper::get_timeofday_us()));
+        ptr<log_entry> entry(new_ptr<log_entry>(state_->get_term(),
+                                                new_conf_buf,
+                                                log_val_type::conf,
+                                                timer_helper::get_timeofday_us()));
         store_log_entry(entry, log_store_->next_slot() - 1);
     }
 }
@@ -886,7 +887,7 @@ void raft_server::send_reconnect_request() {
     auto entry = peers_.find(leader_);
     if (entry != peers_.end()) {
         ptr<peer> p_leader = entry->second;
-        ptr<req_msg> req = cs_new<req_msg>(
+        ptr<req_msg> req = new_ptr<req_msg>(
             state_->get_term(), msg_type::reconnect_request, id_, leader_, 0, 0, 0);
 
         if (p_leader->make_busy()) {
@@ -907,7 +908,7 @@ void raft_server::send_reconnect_request() {
 ptr<resp_msg> raft_server::handle_reconnect_req(req_msg& req) {
     int32 srv_id = req.get_src();
     ptr<resp_msg> resp(
-        cs_new<resp_msg>(state_->get_term(), msg_type::reconnect_response, id_, srv_id));
+        new_ptr<resp_msg>(state_->get_term(), msg_type::reconnect_response, id_, srv_id));
     if (role_ != srv_role::leader) {
         p_er("this node is not a leader "
              "(upon re-connect req from peer %d)",
@@ -1012,10 +1013,10 @@ void raft_server::become_leader() {
             cluster_config::deserialize(*last_config->serialize());
         last_config_cloned->set_log_idx(log_store_->next_slot());
         ptr<buffer> conf_buf = last_config_cloned->serialize();
-        ptr<log_entry> entry(cs_new<log_entry>(state_->get_term(),
-                                               conf_buf,
-                                               log_val_type::conf,
-                                               timer_helper::get_timeofday_us()));
+        ptr<log_entry> entry(new_ptr<log_entry>(state_->get_term(),
+                                                conf_buf,
+                                                log_val_type::conf,
+                                                timer_helper::get_timeofday_us()));
         p_in("[BECOME LEADER] appended new config at %zu\n", log_store_->next_slot());
         store_log_entry(entry);
         config_changing_ = true;
@@ -1263,21 +1264,21 @@ bool raft_server::request_leadership() {
     ptr<peer> pp = entry->second;
 
     // Send resignation message to the follower.
-    ptr<req_msg> req = cs_new<req_msg>(state_->get_term(),
-                                       msg_type::custom_notification_request,
-                                       id_,
-                                       leader_,
-                                       term_for_log(log_store_->next_slot() - 1),
-                                       log_store_->next_slot() - 1,
-                                       quick_commit_index_.load());
+    ptr<req_msg> req = new_ptr<req_msg>(state_->get_term(),
+                                        msg_type::custom_notification_request,
+                                        id_,
+                                        leader_,
+                                        term_for_log(log_store_->next_slot() - 1),
+                                        log_store_->next_slot() - 1,
+                                        quick_commit_index_.load());
 
     // Create a notification.
     ptr<custom_notification_msg> custom_noti =
-        cs_new<custom_notification_msg>(custom_notification_msg::request_resignation);
+        new_ptr<custom_notification_msg>(custom_notification_msg::request_resignation);
 
     // Wrap it using log_entry.
     ptr<log_entry> custom_noti_le =
-        cs_new<log_entry>(0, custom_noti->serialize(), log_val_type::custom);
+        new_ptr<log_entry>(0, custom_noti->serialize(), log_val_type::custom);
 
     req->log_entries().push_back(custom_noti_le);
     pp->send_req(pp, req, resp_handler_);
@@ -1477,7 +1478,7 @@ void raft_server::handle_ext_resp_err(rpc_exception& err) {
         p->slow_down_hb();
         timer_task<void>::executor exec = (timer_task<void>::executor)std::bind(
             &raft_server::on_retryable_req_err, this, p, req);
-        ptr<delayed_task> task(cs_new<timer_task<void>>(exec));
+        ptr<delayed_task> task(new_ptr<timer_task<void>>(exec));
         schedule_task(task, p->get_current_hb_interval());
     }
 }
@@ -1533,10 +1534,10 @@ void raft_server::set_user_ctx(const std::string& ctx) {
     cloned_config->set_user_ctx(ctx);
 
     ptr<buffer> new_conf_buf = cloned_config->serialize();
-    ptr<log_entry> entry = cs_new<log_entry>(state_->get_term(),
-                                             new_conf_buf,
-                                             log_val_type::conf,
-                                             timer_helper::get_timeofday_us());
+    ptr<log_entry> entry = new_ptr<log_entry>(state_->get_term(),
+                                              new_conf_buf,
+                                              log_val_type::conf,
+                                              timer_helper::get_timeofday_us());
     store_log_entry(entry);
     request_append_entries();
 }

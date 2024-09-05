@@ -120,7 +120,7 @@ bool raft_server::request_append_entries(ptr<peer> p) {
                 do_adjustment = true;
             }
             if (do_adjustment) {
-                ptr<raft_params> clone = cs_new<raft_params>(*params);
+                ptr<raft_params> clone = new_ptr<raft_params>(*params);
                 clone->custom_commit_quorum_size_ = 1;
                 clone->custom_election_quorum_size_ = 1;
                 ctx_->set_params(clone);
@@ -131,7 +131,7 @@ bool raft_server::request_append_entries(ptr<peer> p) {
             // Recovered, both cases should be clear.
             p_wn("2-node cluster's follower is responding now, "
                  "restore quorum with default value");
-            ptr<raft_params> clone = cs_new<raft_params>(*params);
+            ptr<raft_params> clone = new_ptr<raft_params>(*params);
             clone->custom_commit_quorum_size_ = 0;
             clone->custom_election_quorum_size_ = 0;
             ctx_->set_params(clone);
@@ -426,26 +426,26 @@ ptr<req_msg> raft_server::create_append_entries_req(ptr<peer>& pp) {
              starting_idx);
 
         // Send out-of-log-range notification to this follower.
-        ptr<req_msg> req = cs_new<req_msg>(term,
-                                           msg_type::custom_notification_request,
-                                           id_,
-                                           p.get_id(),
-                                           0,
-                                           last_log_idx,
-                                           commit_idx);
+        ptr<req_msg> req = new_ptr<req_msg>(term,
+                                            msg_type::custom_notification_request,
+                                            id_,
+                                            p.get_id(),
+                                            0,
+                                            last_log_idx,
+                                            commit_idx);
 
         // Out-of-log message.
-        ptr<out_of_log_msg> ool_msg = cs_new<out_of_log_msg>();
+        ptr<out_of_log_msg> ool_msg = new_ptr<out_of_log_msg>();
         ool_msg->start_idx_of_leader_ = starting_idx;
 
         // Create a notification containing OOL message.
-        ptr<custom_notification_msg> custom_noti = cs_new<custom_notification_msg>(
+        ptr<custom_notification_msg> custom_noti = new_ptr<custom_notification_msg>(
             custom_notification_msg::out_of_log_range_warning);
         custom_noti->ctx_ = ool_msg->serialize();
 
         // Wrap it using log_entry.
         ptr<log_entry> custom_noti_le =
-            cs_new<log_entry>(0, custom_noti->serialize(), log_val_type::custom);
+            new_ptr<log_entry>(0, custom_noti->serialize(), log_val_type::custom);
 
         req->log_entries().push_back(custom_noti_le);
         return req;
@@ -478,13 +478,13 @@ ptr<req_msg> raft_server::create_append_entries_req(ptr<peer>& pp) {
         p_db("idx range: %zu-%zu", last_log_idx + 1, adjusted_end_idx - 1);
     }
 
-    ptr<req_msg> req(cs_new<req_msg>(term,
-                                     msg_type::append_entries_request,
-                                     id_,
-                                     p.get_id(),
-                                     last_log_term,
-                                     last_log_idx,
-                                     commit_idx));
+    ptr<req_msg> req(new_ptr<req_msg>(term,
+                                      msg_type::append_entries_request,
+                                      id_,
+                                      p.get_id(),
+                                      last_log_term,
+                                      last_log_idx,
+                                      commit_idx));
     std::vector<ptr<log_entry>>& v = req->log_entries();
     if (log_entries) {
         v.insert(v.end(), log_entries->begin(), log_entries->end());
@@ -563,11 +563,11 @@ ptr<resp_msg> raft_server::handle_append_entries(req_msg& req) {
     //
     // In not accepted case, we will return log_store_->next_slot() for
     // the leader to quick jump to the index that might aligned.
-    ptr<resp_msg> resp = cs_new<resp_msg>(state_->get_term(),
-                                          msg_type::append_entries_response,
-                                          id_,
-                                          req.get_src(),
-                                          log_store_->next_slot());
+    ptr<resp_msg> resp = new_ptr<resp_msg>(state_->get_term(),
+                                           msg_type::append_entries_response,
+                                           id_,
+                                           req.get_src(),
+                                           log_store_->next_slot());
 
     ptr<snapshot> local_snp = get_last_snapshot();
     ulong log_term = 0;
@@ -1016,21 +1016,21 @@ void raft_server::handle_append_entries_resp(resp_msg& resp) {
         hb_alive_ = false;
 
         // Send leadership takeover request to this follower.
-        ptr<req_msg> req = cs_new<req_msg>(state_->get_term(),
-                                           msg_type::custom_notification_request,
-                                           id_,
-                                           p->get_id(),
-                                           term_for_log(log_store_->next_slot() - 1),
-                                           log_store_->next_slot() - 1,
-                                           quick_commit_index_.load());
+        ptr<req_msg> req = new_ptr<req_msg>(state_->get_term(),
+                                            msg_type::custom_notification_request,
+                                            id_,
+                                            p->get_id(),
+                                            term_for_log(log_store_->next_slot() - 1),
+                                            log_store_->next_slot() - 1,
+                                            quick_commit_index_.load());
 
         // Create a notification.
-        ptr<custom_notification_msg> custom_noti =
-            cs_new<custom_notification_msg>(custom_notification_msg::leadership_takeover);
+        ptr<custom_notification_msg> custom_noti = new_ptr<custom_notification_msg>(
+            custom_notification_msg::leadership_takeover);
 
         // Wrap it using log_entry.
         ptr<log_entry> custom_noti_le =
-            cs_new<log_entry>(0, custom_noti->serialize(), log_val_type::custom);
+            new_ptr<log_entry>(0, custom_noti->serialize(), log_val_type::custom);
 
         req->log_entries().push_back(custom_noti_le);
         p->send_req(p, req, resp_handler_);

@@ -105,7 +105,7 @@ void raft_server::request_prevote() {
         // 2-node cluster's pre-vote failed due to offline node.
         p_wn("2-node cluster's pre-vote is failing long time, "
              "adjust quorum to 1");
-        ptr<raft_params> clone = cs_new<raft_params>(*params);
+        ptr<raft_params> clone = new_ptr<raft_params>(*params);
         clone->custom_commit_quorum_size_ = 1;
         clone->custom_election_quorum_size_ = 1;
         ctx_->set_params(clone);
@@ -148,13 +148,13 @@ void raft_server::request_prevote() {
             continue;
         }
 
-        ptr<req_msg> req(cs_new<req_msg>(state_->get_term(),
-                                         msg_type::pre_vote_request,
-                                         id_,
-                                         pp->get_id(),
-                                         term_for_log(log_store_->next_slot() - 1),
-                                         log_store_->next_slot() - 1,
-                                         quick_commit_index_.load()));
+        ptr<req_msg> req(new_ptr<req_msg>(state_->get_term(),
+                                          msg_type::pre_vote_request,
+                                          id_,
+                                          pp->get_id(),
+                                          term_for_log(log_store_->next_slot() - 1),
+                                          log_store_->next_slot() - 1,
+                                          quick_commit_index_.load()));
         if (pp->make_busy()) {
             pp->send_req(pp, req, resp_handler_);
         } else {
@@ -249,20 +249,20 @@ void raft_server::request_vote(bool force_vote) {
             // Do not send voting request to learner.
             continue;
         }
-        ptr<req_msg> req = cs_new<req_msg>(state_->get_term(),
-                                           msg_type::request_vote_request,
-                                           id_,
-                                           pp->get_id(),
-                                           term_for_log(log_store_->next_slot() - 1),
-                                           log_store_->next_slot() - 1,
-                                           quick_commit_index_.load());
+        ptr<req_msg> req = new_ptr<req_msg>(state_->get_term(),
+                                            msg_type::request_vote_request,
+                                            id_,
+                                            pp->get_id(),
+                                            term_for_log(log_store_->next_slot() - 1),
+                                            log_store_->next_slot() - 1,
+                                            quick_commit_index_.load());
         if (force_vote) {
             // Add a special log entry to let receivers ignore the priority.
 
             // Force vote message, and wrap it using log_entry.
-            ptr<force_vote_msg> fv_msg = cs_new<force_vote_msg>();
+            ptr<force_vote_msg> fv_msg = new_ptr<force_vote_msg>();
             ptr<log_entry> fv_msg_le =
-                cs_new<log_entry>(0, fv_msg->serialize(), log_val_type::custom);
+                new_ptr<log_entry>(0, fv_msg->serialize(), log_val_type::custom);
 
             // Ship it.
             req->log_entries().push_back(fv_msg_le);
@@ -297,7 +297,7 @@ ptr<resp_msg> raft_server::handle_vote_req(req_msg& req) {
          my_priority_,
          state_->get_voted_for());
 
-    ptr<resp_msg> resp(cs_new<resp_msg>(
+    ptr<resp_msg> resp(new_ptr<resp_msg>(
         state_->get_term(), msg_type::request_vote_response, id_, req.get_src()));
 
     bool log_okay = req.get_last_log_term() > log_store_->last_entry()->get_term()
@@ -422,11 +422,11 @@ ptr<resp_msg> raft_server::handle_prevote_req(req_msg& req) {
          state_->get_term(),
          (hb_alive_) ? "HB alive" : "HB dead");
 
-    ptr<resp_msg> resp(cs_new<resp_msg>(req.get_term(),
-                                        msg_type::pre_vote_response,
-                                        id_,
-                                        req.get_src(),
-                                        next_idx_for_resp));
+    ptr<resp_msg> resp(new_ptr<resp_msg>(req.get_term(),
+                                         msg_type::pre_vote_response,
+                                         id_,
+                                         req.get_src(),
+                                         next_idx_for_resp));
 
     // NOTE:
     //   While `catching_up_` flag is on, this server does not get

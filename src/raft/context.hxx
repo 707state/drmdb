@@ -52,7 +52,7 @@ public:
         , logger_(l)
         , rpc_cli_factory_(cli_factory)
         , scheduler_(scheduler)
-        , params_(cs_new<raft_params>(params)) {}
+        , params_(new_ptr<raft_params>(params)) {}
 
     /**
      * Register an event callback function.
