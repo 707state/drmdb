@@ -6,4 +6,4 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 add_library(raft STATIC ${SOURCES})
 link_directories(${BOOST_LIBRARY_DIRS})
-target_link_libraries(raft fmt)
+target_link_libraries(raft)
