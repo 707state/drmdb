@@ -1,5 +1,4 @@
 
-#include "strfmt.hxx"
 #define ASIO_HAS_STD_CHRONO 1
 #if defined(__EDG_VERSION__)
 #undef __EDG_VERSION__
@@ -17,9 +16,9 @@
 #include "raft_server.hxx"
 #include "raft_server_handler.hxx"
 #include "rpc_listener.hxx"
+#include "strfmt.hxx"
 #include "tracer.hxx"
 
-#define USE_BOOST_ASIO
 #ifdef USE_BOOST_ASIO
 #include <boost/asio.hpp>
 #else
@@ -29,8 +28,12 @@
 #include <atomic>
 #include <ctime>
 #include <exception>
+#include <fstream>
 #include <list>
+#include <queue>
+#include <regex>
 #include <thread>
+
 #ifdef USE_BOOST_ASIO
 using namespace boost;
 #define ERROR_CODE system::error_code

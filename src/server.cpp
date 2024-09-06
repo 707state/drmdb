@@ -22,6 +22,7 @@
 #include <boost/lexical_cast.hpp>
 #include <cassert>
 #include <chrono>
+#include <csetjmp>
 #include <cstddef>
 #include <exception>
 #include <execution/execution_manager.h>
@@ -38,7 +39,6 @@
 #include <server/db_state_machind.h>
 #include <server/portal.h>
 #include <server/server_params.h>
-#include <spdlog/spdlog.h>
 #include <string>
 #include <thread>
 #include <vector>
@@ -180,17 +180,10 @@ void init_raft(ptr<state_machine> sm_instance) {
 
     // Raft parameters.
     raft_params params;
-#if defined(WIN32) || defined(_WIN32)
-    // heartbeat: 1 sec, election timeout: 2 - 4 sec.
-    params.heart_beat_interval_ = 1000;
-    params.election_timeout_lower_bound_ = 2000;
-    params.election_timeout_upper_bound_ = 4000;
-#else
     // heartbeat: 100 ms, election timeout: 200 - 400 ms.
     params.heart_beat_interval_ = 100;
     params.election_timeout_lower_bound_ = 200;
     params.election_timeout_upper_bound_ = 400;
-#endif
     // Upto 5 logs will be preserved ahead the last snapshot.
     params.reserved_log_items_ = 5;
     // Snapshot will be created for every 5 log appends.
@@ -204,6 +197,7 @@ void init_raft(ptr<state_machine> sm_instance) {
     // Initialize Raft server.
     stuff.raft_instance_ = stuff.launcher_.init(
         stuff.sm_, stuff.smgr_, stuff.raft_logger_, stuff.port_, asio_opt, params);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     if (!stuff.raft_instance_) {
         std::cerr << "Failed to initialize launcher (see the message "
                      "in the log file)."
@@ -212,6 +206,7 @@ void init_raft(ptr<state_machine> sm_instance) {
         exit(-1);
     }
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     // Wait until Raft server is ready (upto 5 seconds).
     const size_t MAX_TRY = 100;
     std::cout << "init Raft instance ";
@@ -237,7 +232,6 @@ void usage() {
     std::cout << ss.str();
     exit(0);
 }
-// TODO: 魔改一下,要用cxxopts处理参数
 void set_server_info(cxxopts::ParseResult& results) {
     // Get server ID.
     if (results.count("id")) {
@@ -300,7 +294,6 @@ void handle_result(nuraft::ptr<steady_timer> timer,
         return;
     }
 }
-bool execute_sql(const std::string& cmd_type, const std::vector<std::string>& tokens);
 void append_log(const std::string& cmd, const std::vector<std::string>& tokens) {
     if (tokens.size() < 2) {
         std::cout << "too few arguments" << std::endl;
@@ -375,6 +368,7 @@ bool do_cmd(const std::vector<std::string>& tokens) {
         return false;
     } else if (cmd_type == "help") {
         usage();
+        return false;
     } else {
         auto cmd = fmt::format("{}", fmt::join(tokens, " "));
         if (cmd_type == "exit") {
@@ -382,124 +376,121 @@ bool do_cmd(const std::vector<std::string>& tokens) {
             return false;
         } else {
             append_log(cmd_type, tokens);
-            // 开启事务，初始化系统所需的上下文信息（包括事务对象指针、锁管理器指针、日志管理器指针、存放结果的buffer、记录结果长度的变量）
-            memset(data_send, '\0', BUFFER_LENGTH);
-            offset = 0;
-            auto context = std::make_shared<Context>(
-                lock_manager.get(), log_manager.get(), nullptr, data_send, &offset);
-            SetTransaction(&txn_id, context);
-            bool finished_analyze = false;
-            YY_BUFFER_STATE buf = yy_scan_string(cmd.c_str());
-            if (yyparse() == 0) {
-                if (ast::parse_tree != nullptr) {
-                    try {
-
-                        std::shared_ptr<Query> query =
-                            analyze->do_analyze(ast::parse_tree);
-                        yy_delete_buffer(buf);
-                        finished_analyze = true;
-                        // 优化器
-                        std::shared_ptr<Plan> plan =
-                            optimizer->plan_query(query, context.get());
-                        // portal
-                        std::shared_ptr<PortalStmt> portalStmt =
-                            portal->start(plan, context.get());
-                        portal->run(portalStmt, ql_manager.get(), &txn_id, context.get());
-                        portal->drop();
-                    } catch (TransactionAbortException& exception) {
-                        // 事务需要回滚，需要把abort信息返回给客户端并写入output.txt文件中
-                        std::string str = "abort\n";
-                        memcpy(data_send, str.c_str(), str.length());
-                        data_send[str.length()] = '\0';
-                        offset = str.length();
-                        // 回滚事务
-                        txn_manager->abort(context->txn_, log_manager.get());
-                        std::fstream outfile;
-                        if (sm_manager.get()->enable_output_) {
-                            outfile.open("output.txt", std::ios::out | std::ios::app);
-                            outfile << str;
-                            outfile.close();
-                        }
-                    } catch (DRMDBError& e) {
-                        // 遇到异常，需要打印failure到output.txt文件中，并发异常信息返回给客户端
-                        std::cerr << e.what() << std::endl;
-
-                        memcpy(data_send, e.what(), e.get_msg_len());
-                        data_send[e.get_msg_len()] = '\n';
-                        data_send[e.get_msg_len() + 1] = '\0';
-                        offset = e.get_msg_len() + 1;
-
-                        // 将报错信息写入output.txt
-                        std::fstream outfile;
-                        if (sm_manager.get()->enable_output_) {
-                            outfile.open("output.txt", std::ios::out | std::ios::app);
-                            outfile << "failure\n";
-                            outfile.close();
-                        }
-                    }
-                }
-            }
-            if (finished_analyze == false) {
-                yy_delete_buffer(buf);
-            }
-            for (int i = 0; i <= strlen(data_send); i++) {
-                if (data_send[i] == '\0') {
-                    break;
-                } else {
-                    printf("%c", data_send[i]);
-                }
-            }
-            memset(data_send, 0, 8192);
-
-            // 如果是单挑语句，需要按照一个完整的事务来执行，所以执行完当前语句后，自动提交事务
-            if (context->txn_->get_txn_mode() == false) {
-                txn_manager->commit(context->txn_, context->log_mgr_);
-            }
         }
     }
 }
 
-bool execute_sql(const std::string& cmd_type, const std::vector<std::string>& tokens) {
-    int offset = 0;
-    txn_id_t txn_id = INVALID_TXN_ID;
+using namespace drmdb_server;
+
+#define SOCK_PORT 8765
+#define MAX_CONN_LIMIT 8
+static bool should_exit = false;
+pthread_mutex_t* buffer_mutex;
+pthread_mutex_t* sockfd_mutex;
+
+static jmp_buf jmpbuf;
+void sigint_handler(int signo) {
+    should_exit = true;
+    log_manager->flush_log_to_disk();
+    std::cout << "[External] Received Stop Signal. Server shutdown." << std::endl;
+    longjmp(jmpbuf, 1);
+}
+
+// 判断当前正在执行的是显式事务还是单条SQL语句的事务，并更新事务ID
+void SetTransaction(txn_id_t* txn_id, Context* context) {
+    context->txn_ = txn_manager->get_transaction(*txn_id);
+    if (context->txn_ == nullptr
+        || context->txn_->get_state() == TransactionState::COMMITTED
+        || context->txn_->get_state() == TransactionState::ABORTED) {
+        context->txn_ = txn_manager->begin();
+        *txn_id = context->txn_->get_transaction_id();
+        context->txn_->set_txn_mode(false);
+    }
+}
+
+void* client_handler(void* sock_fd) {
+    int fd = *(static_cast<int*>(sock_fd));
+    delete static_cast<int*>(sock_fd);
+    pthread_mutex_unlock(sockfd_mutex);
+
+    int i_recvBytes = 0;
+    // 接收客户端发送的请求
+    char data_recv[BUFFER_LENGTH];
     // 需要返回给客户端的结果
     char data_send[BUFFER_LENGTH];
-    auto cmd = fmt::format("{}", fmt::join(tokens, " "));
-    if (cmd_type == "exit") {
-        stuff.launcher_.shutdown();
-        return false;
-    } else {
-        // 开启事务，初始化系统所需的上下文信息（包括事务对象指针、锁管理器指针、日志管理器指针、存放结果的buffer、记录结果长度的变量）
+    // 需要返回给客户端的结果的长度
+    int offset = 0;
+    // 记录客户端当前正在执行的事务ID
+    txn_id_t txn_id = INVALID_TXN_ID;
+
+    std::string output =
+        "[External] Established client connection, Sock FD: " + std::to_string(fd) + "\n";
+    std::cout << output;
+
+    while (true) {
+        memset(data_recv, 0, BUFFER_LENGTH);
+
+        i_recvBytes = read(fd, data_recv, BUFFER_LENGTH);
+
+        if (i_recvBytes == 0) {
+            std::cout << "[External] Maybe the client has closed" << std::endl;
+            break;
+        }
+        if (i_recvBytes == -1) {
+            std::cout << "[External] Client read error!" << std::endl;
+            break;
+        }
+
+        if (strcmp(data_recv, "exit") == 0) {
+            std::cout << "[External] Client exit." << std::endl;
+            break;
+        }
+        if (strcmp(data_recv, "crash") == 0) {
+            std::cout << "[External] Server crash" << std::endl;
+            exit(1);
+        }
+
+        std::cout << "[SQL][FD " << fd << "] " << data_recv << std::endl;
+
         memset(data_send, '\0', BUFFER_LENGTH);
         offset = 0;
-        auto context = std::make_shared<Context>(
+
+        // 开启事务，初始化系统所需的上下文信息（包括事务对象指针、锁管理器指针、日志管理器指针、存放结果的buffer、记录结果长度的变量）
+        Context* context = new Context(
             lock_manager.get(), log_manager.get(), nullptr, data_send, &offset);
         SetTransaction(&txn_id, context);
-        bool finished_analyze = false;
-        YY_BUFFER_STATE buf = yy_scan_string(cmd.c_str());
+
+        // 用于判断是否已经调用了yy_delete_buffer来删除buf
+        bool finish_analyze = false;
+        pthread_mutex_lock(buffer_mutex);
+        auto result = tokenize(data_recv);
+        do_cmd(result);
+        YY_BUFFER_STATE buf = yy_scan_string(data_recv);
         if (yyparse() == 0) {
             if (ast::parse_tree != nullptr) {
                 try {
-
+                    // analyze and rewrite
                     std::shared_ptr<Query> query = analyze->do_analyze(ast::parse_tree);
                     yy_delete_buffer(buf);
-                    finished_analyze = true;
+                    finish_analyze = true;
+                    pthread_mutex_unlock(buffer_mutex);
                     // 优化器
-                    std::shared_ptr<Plan> plan =
-                        optimizer->plan_query(query, context.get());
+                    std::shared_ptr<Plan> plan = optimizer->plan_query(query, context);
                     // portal
-                    std::shared_ptr<PortalStmt> portalStmt =
-                        portal->start(plan, context.get());
-                    portal->run(portalStmt, ql_manager.get(), &txn_id, context.get());
+                    std::shared_ptr<PortalStmt> portalStmt = portal->start(plan, context);
+                    portal->run(portalStmt, ql_manager.get(), &txn_id, context);
                     portal->drop();
-                } catch (TransactionAbortException& exception) {
+                } catch (TransactionAbortException& e) {
                     // 事务需要回滚，需要把abort信息返回给客户端并写入output.txt文件中
                     std::string str = "abort\n";
                     memcpy(data_send, str.c_str(), str.length());
                     data_send[str.length()] = '\0';
                     offset = str.length();
+
                     // 回滚事务
                     txn_manager->abort(context->txn_, log_manager.get());
+                    std::cout << "[TXN][FD " << fd << "]" << e.GetInfo() << std::endl;
+
                     std::fstream outfile;
                     if (sm_manager.get()->enable_output_) {
                         outfile.open("output.txt", std::ios::out | std::ios::app);
@@ -525,25 +516,108 @@ bool execute_sql(const std::string& cmd_type, const std::vector<std::string>& to
                 }
             }
         }
-        if (finished_analyze == false) {
+        if (finish_analyze == false) {
             yy_delete_buffer(buf);
+            pthread_mutex_unlock(buffer_mutex);
         }
-        for (int i = 0; i <= strlen(data_send); i++) {
-            if (data_send[i] == '\0') {
-                break;
-            } else {
-                printf("%c", data_send[i]);
-            }
+        // future TODO: 格式化 sql_handler.result, 传给客户端
+        // send result with fixed format, use protobuf in the future
+        if (write(fd, data_send, offset + 1) == -1) {
+            break;
         }
-        memset(data_send, 0, 8192);
-
         // 如果是单挑语句，需要按照一个完整的事务来执行，所以执行完当前语句后，自动提交事务
         if (context->txn_->get_txn_mode() == false) {
             txn_manager->commit(context->txn_, context->log_mgr_);
         }
+
+        delete context;
     }
+    // Clear
+    std::cout << "[External] Terminating current client connection..." << std::endl;
+    close(fd);          // close a file descriptor.
+    pthread_exit(NULL); // terminate calling thread!
 }
-using namespace drmdb_server;
+
+void start_server() {
+    // init mutex
+    buffer_mutex = static_cast<pthread_mutex_t*>(malloc(sizeof(pthread_mutex_t)));
+    sockfd_mutex = static_cast<pthread_mutex_t*>(malloc(sizeof(pthread_mutex_t)));
+    LoadExecutor::load_pool_access_lock =
+        static_cast<pthread_mutex_t*>(malloc(sizeof(pthread_mutex_t)));
+    pthread_mutex_init(buffer_mutex, nullptr);
+    pthread_mutex_init(sockfd_mutex, nullptr);
+    pthread_mutex_init(LoadExecutor::load_pool_access_lock, nullptr);
+
+    int sockfd_server = 0;
+    int fd_temp = 0;
+    struct sockaddr_in s_addr_in {};
+
+    // 初始化连接
+    sockfd_server = socket(AF_INET, SOCK_STREAM, 0); // ipv4,TCP
+    assert(sockfd_server != -1);
+    int val = 1;
+    setsockopt(sockfd_server, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+
+    // before bind(), set the attr of structure sockaddr.
+    memset(&s_addr_in, 0, sizeof(s_addr_in));
+    s_addr_in.sin_family = AF_INET;
+    s_addr_in.sin_addr.s_addr = htonl(INADDR_ANY);
+    s_addr_in.sin_port = htons(SOCK_PORT);
+    fd_temp = bind(
+        sockfd_server, reinterpret_cast<struct sockaddr*>(&s_addr_in), sizeof(s_addr_in));
+    if (fd_temp == -1) {
+        std::cout << "Bind error!" << std::endl;
+        exit(1);
+    }
+
+    fd_temp = listen(sockfd_server, MAX_CONN_LIMIT);
+    if (fd_temp == -1) {
+        std::cout << "Listen error!" << std::endl;
+        exit(1);
+    }
+
+    while (!should_exit) {
+        std::cout << "Waiting for new connection..." << std::endl;
+        pthread_t thread_id = 0;
+        struct sockaddr_in s_addr_client {};
+        int client_length = sizeof(s_addr_client);
+
+        if (setjmp(jmpbuf)) {
+            std::cout << "Break from Server Listen Loop\n";
+            break;
+        }
+
+        // Block here. Until server accepts a new connection.
+        pthread_mutex_lock(sockfd_mutex);
+        int sockfd = accept(sockfd_server,
+                            reinterpret_cast<struct sockaddr*>(&s_addr_client),
+                            reinterpret_cast<socklen_t*>(&client_length));
+        if (sockfd == -1) {
+            std::cout << "Accept error!" << std::endl;
+            continue; // ignore current socket ,continue while loop.
+        }
+        int* sock_fd_ptr = new int(sockfd);
+        // 和客户端建立连接，并开启一个线程负责处理客户端请求
+        if (pthread_create(&thread_id, nullptr, &client_handler, (void*)(sock_fd_ptr))
+            != 0) {
+            std::cout << "Create thread fail!" << std::endl;
+            delete sock_fd_ptr;
+            break; // break while loop
+        }
+    }
+
+    // Clear
+    std::cout << " Try to close all client-connection.\n";
+    int ret = shutdown(sockfd_server,
+                       SHUT_WR); // shut down the all or part of a full-duplex connection.
+    if (ret == -1) {
+        printf("%s\n", strerror(errno));
+    }
+    //    assert(ret != -1);
+    sm_manager->close_db();
+    std::cout << " DB has been closed.\n";
+    std::cout << "Server shuts down." << std::endl;
+}
 
 int main(int argc, const char* argv[]) {
     cxxopts::Options options("drmdb", "基于rmdb的二次开发，初步实现了raft算法");
@@ -571,9 +645,32 @@ int main(int argc, const char* argv[]) {
     std::cout << "               Version 0.1.0" << std::endl;
     std::cout << "    Server ID:    " << stuff.server_id_ << std::endl;
     std::cout << "    Endpoint:     " << stuff.endpoint_ << std::endl;
-    std::this_thread::sleep_for(std::chrono::milliseconds(400));
     init_raft(std::make_shared<db_state_machine>());
-    loop();
 
+    signal(SIGINT, sigint_handler);
+    try {
+        std::cout << "\n"
+                     "  _____  __  __ _____  ____  \n"
+                     " |  __ \\|  \\/  |  __ \\|  _ \\ \n"
+                     " | |__) | \\  / | |  | | |_) |\n"
+                     " |  _  /| |\\/| | |  | |  _ < \n"
+                     " | | \\ \\| |  | | |__| | |_) |\n"
+                     " |_|  \\_\\_|  |_|_____/|____/ \n"
+                     "\n"
+                     "Welcome to RMDB!\n"
+                     "Type 'help;' for help.\n"
+                     "\n";
+        // recovery database
+        recovery->analyze();
+        recovery->redo();
+        recovery->undo();
+
+        // 开启服务端，开始接受客户端连接
+        start_server();
+    } catch (DRMDBError& e) {
+        std::cerr << e.what() << std::endl;
+        exit(1);
+    }
+    return 0;
     return 0;
 }

@@ -1,23 +1,3 @@
-/************************************************************************
-Modifications Copyright 2017-2019 eBay Inc.
-Author/Developer(s): Jung-Sang Ahn
-
-Original Copyright:
-See URL: https://github.com/greensky00/event_awaiter
-         (v0.1.1)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-**************************************************************************/
 
 #pragma once
 
@@ -27,27 +7,17 @@ limitations under the License.
 
 class EventAwaiter {
 private:
-    enum class AS {
-        idle    = 0x0,
-        ready   = 0x1,
-        waiting = 0x2,
-        done    = 0x3
-    };
+    enum class AS { idle = 0x0, ready = 0x1, waiting = 0x2, done = 0x3 };
 
 public:
-    EventAwaiter() : status(AS::idle) {}
+    EventAwaiter()
+        : status(AS::idle) {}
 
-    void reset() {
-        status.store(AS::idle);
-    }
+    void reset() { status.store(AS::idle); }
 
-    void wait() {
-        wait_us(0);
-    }
+    void wait() { wait_us(0); }
 
-    void wait_ms(size_t time_ms) {
-        wait_us(time_ms * 1000);
-    }
+    void wait_ms(size_t time_ms) { wait_us(time_ms * 1000); }
 
     void wait_us(size_t time_us) {
         AS expected = AS::idle;
@@ -94,5 +64,3 @@ private:
     std::mutex cvLock;
     std::condition_variable cv;
 };
-
-

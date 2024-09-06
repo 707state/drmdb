@@ -1,22 +1,3 @@
-/************************************************************************
-Modifications Copyright 2017-present eBay Inc.
-
-Original Copyright:
-See URL: https://github.com/datatechnology/cornerstone
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-**************************************************************************/
-
 #pragma once
 
 #include "asio_service_options.hxx"
@@ -44,8 +25,7 @@ struct nuraft_global_config {
     nuraft_global_config()
         : num_commit_threads_(1)
         , num_append_threads_(1)
-        , max_scheduling_unit_ms_(200)
-        {}
+        , max_scheduling_unit_ms_(200) {}
 
     /**
      * The number of globally shared threads executing the
@@ -75,16 +55,16 @@ public:
     ~nuraft_global_mgr();
 
     __nocopy__(nuraft_global_mgr);
-public:
 
+public:
     /**
      * Initialize the global instance.
      *
      * @return If succeeds, the initialized instance.
      *         If already initialized, the existing instance.
      */
-    static nuraft_global_mgr* init(const nuraft_global_config& config =
-                                       __DEFAULT_NURAFT_GLOBAL_CONFIG);
+    static nuraft_global_mgr*
+    init(const nuraft_global_config& config = __DEFAULT_NURAFT_GLOBAL_CONFIG);
 
     /**
      * Shutdown the global instance and free all resources.
@@ -108,9 +88,9 @@ public:
      * @param logger_inst Logger instance.
      * @return Asio service instance.
      */
-    static ptr<asio_service> init_asio_service(
-        const asio_service_options& asio_opt = asio_service_options(),
-        ptr<logger> logger_inst = nullptr);
+    static ptr<asio_service>
+    init_asio_service(const asio_service_options& asio_opt = asio_service_options(),
+                      ptr<logger> logger_inst = nullptr);
 
     /**
      * Get the global Asio service instance.
@@ -189,24 +169,24 @@ private:
     /**
      * Commit thread pool.
      */
-    std::vector< ptr<worker_handle> > commit_workers_;
+    std::vector<ptr<worker_handle>> commit_workers_;
 
     /**
      * Commit thread pool.
      */
-    std::vector< ptr<worker_handle> > append_workers_;
+    std::vector<ptr<worker_handle>> append_workers_;
 
     /**
      * Commit requests.
      * Duplicate requests from the same `raft_server` will not be allowed.
      */
-    std::list< ptr<raft_server> > commit_queue_;
+    std::list<ptr<raft_server>> commit_queue_;
 
     /**
      * A set for efficient duplicate checking of `raft_server`.
      * It will contain all `raft_server`s currently in `commit_queue_`.
      */
-    std::unordered_set< ptr<raft_server> > commit_server_set_;
+    std::unordered_set<ptr<raft_server>> commit_server_set_;
 
     /**
      * Lock for `commit_queue_` and `commit_server_set_`.
@@ -217,13 +197,13 @@ private:
      * Append (replication) requests.
      * Duplicate requests from the same `raft_server` will not be allowed.
      */
-    std::list< ptr<raft_server> > append_queue_;
+    std::list<ptr<raft_server>> append_queue_;
 
     /**
      * A set for efficient duplicate checking of `raft_server`.
      * It will contain all `raft_server`s currently in `append_queue_`.
      */
-    std::unordered_set< ptr<raft_server> > append_server_set_;
+    std::unordered_set<ptr<raft_server>> append_server_set_;
 
     /**
      * Lock for `append_queue_` and `append_server_set_`.
@@ -231,5 +211,4 @@ private:
     std::mutex append_queue_lock_;
 };
 
-} // namespace nuraft;
-
+} // namespace nuraft
