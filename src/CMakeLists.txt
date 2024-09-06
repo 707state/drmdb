@@ -34,4 +34,5 @@ target_link_libraries(
   OpenSSL::SSL
   OpenSSL::Crypto
   Boost::thread
+  fmt::fmt
   Boost::system)

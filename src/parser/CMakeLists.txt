@@ -9,4 +9,4 @@ add_flex_bison_dependency(lex yacc)
 set(SOURCES ${BISON_yacc_OUTPUT_SOURCE} ${FLEX_lex_OUTPUTS} ast.cpp)
 add_library(parser STATIC ${SOURCES})
 
-target_link_libraries(parser PRIVATE spdlog::spdlog)
+target_link_libraries(parser PRIVATE)
