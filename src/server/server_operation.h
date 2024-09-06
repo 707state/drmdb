@@ -217,6 +217,8 @@ void set_server_info(cxxopts::ParseResult& results) {
     // Get server ID.
     if (results.count("id")) {
         stuff.server_id_ = results["id"].as<int>();
+    } else {
+        stuff.server_id_ = 1;
     }
     if (stuff.server_id_ < 1) {
         std::cerr << "wrong server id (should be >= 1): " << stuff.server_id_
@@ -226,9 +228,13 @@ void set_server_info(cxxopts::ParseResult& results) {
     // Get server address and port.
     if (results.count("address")) {
         stuff.addr_ = results["address"].as<std::string>();
+    } else {
+        stuff.addr_ = "127.0.0.1";
     }
     if (results.count("port")) {
         stuff.port_ = results["port"].as<int>();
+    } else {
+        stuff.port_ = 9999;
     }
     if (stuff.port_ < 1000) {
         std::cerr << "wrong port (should be >= 1000): " << stuff.port_ << std::endl;

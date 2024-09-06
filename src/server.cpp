@@ -310,9 +310,6 @@ bool execute_sql(const std::string& cmd_type, const std::vector<std::string>& to
 using namespace drmdb_server;
 
 int main(int argc, const char* argv[]) {
-    if (argc < 3) {
-        usage(argc, argv);
-    }
     cxxopts::Options options("drmdb", "基于rmdb的二次开发，初步实现了raft算法");
     options.add_options()("h,help",
                           "输出帮助信息")("p,port", "指定port", cxxopts::value<int>())(
