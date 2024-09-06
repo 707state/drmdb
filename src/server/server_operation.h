@@ -1,4 +1,5 @@
 #pragma once
+#include "cxxopts.hpp"
 #include "in_memory_state_mgr.h"
 #include "logger_wrapper.h"
 #include "raft/buffer.hxx"
@@ -211,30 +212,26 @@ void usage(int argc, const char* argv[]) {
     std::cout << ss.str();
     exit(0);
 }
-
-void set_server_info(int argc, const char* argv[]) {
+// TODO: 魔改一下,要用cxxopts处理参数
+void set_server_info(cxxopts::ParseResult& results) {
     // Get server ID.
-    stuff.server_id_ = atoi(argv[1]);
+    if (results.count("id")) {
+        stuff.server_id_ = results["id"].as<int>();
+    }
     if (stuff.server_id_ < 1) {
         std::cerr << "wrong server id (should be >= 1): " << stuff.server_id_
                   << std::endl;
-        usage(argc, argv);
     }
 
     // Get server address and port.
-    std::string str = argv[2];
-    size_t pos = str.rfind(":");
-    if (pos == std::string::npos) {
-        std::cerr << "wrong endpoint: " << str << std::endl;
-        usage(argc, argv);
+    if (results.count("address")) {
+        stuff.addr_ = results["address"].as<std::string>();
     }
-
-    stuff.port_ = atoi(str.substr(pos + 1).c_str());
+    if (results.count("port")) {
+        stuff.port_ = results["port"].as<int>();
+    }
     if (stuff.port_ < 1000) {
         std::cerr << "wrong port (should be >= 1000): " << stuff.port_ << std::endl;
-        usage(argc, argv);
     }
-
-    stuff.addr_ = str.substr(0, pos);
     stuff.endpoint_ = stuff.addr_ + ":" + std::to_string(stuff.port_);
 }

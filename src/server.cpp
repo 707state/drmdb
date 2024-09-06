@@ -1,3 +1,4 @@
+#include "cxxopts.hpp"
 #include "index/ix_manager.h"
 #include "parser/ast.h"
 #include "parser/yacc.tab.hpp"
@@ -12,6 +13,7 @@
 #include "transaction/txn_defs.h"
 #include <boost/asio.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/integer_fwd.hpp>
 #include <boost/lexical_cast.hpp>
 #include <cassert>
 #include <chrono>
@@ -311,8 +313,28 @@ int main(int argc, const char* argv[]) {
     if (argc < 3) {
         usage(argc, argv);
     }
-    set_server_info(argc, argv);
-    std::cout << "    -- Echo Server with Raft --" << std::endl;
+    cxxopts::Options options("drmdb", "基于rmdb的二次开发，初步实现了raft算法");
+    options.add_options()("h,help",
+                          "输出帮助信息")("p,port", "指定port", cxxopts::value<int>())(
+        "i,id", "设置服务器id", cxxopts::value<int>())(
+        "a,address", "设置ip", cxxopts::value<std::string>())(
+        "d,database", "设置数据库名", cxxopts::value<std::string>());
+    auto result = options.parse(argc, argv);
+    set_server_info(result);
+    if (result.count("help")) {
+        std::cout << "Usage: \n"
+                  << "  ./drmdb -p/--port [PORT] -a/--address [ADDRESS] -d/--database "
+                     "[DATABASE] -i/--id [ID] -h/--help";
+        exit(1);
+    }
+    if (result.count("database")) {
+        auto db_name = result["database"].as<std::string>();
+        if (!sm_manager->is_dir(db_name)) {
+            sm_manager->create_db(db_name);
+        }
+        sm_manager->open_db(db_name);
+    }
+    std::cout << "    --  Rafted Rmdb --" << std::endl;
     std::cout << "               Version 0.1.0" << std::endl;
     std::cout << "    Server ID:    " << stuff.server_id_ << std::endl;
     std::cout << "    Endpoint:     " << stuff.endpoint_ << std::endl;
