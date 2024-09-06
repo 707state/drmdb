@@ -1,8 +1,21 @@
-#include "common/config.h"
+/* Copyright (c) 2023 Renmin University of China
+RMDB is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL
+v2. You may obtain a copy of Mulan PSL v2 at:
+        http://license.coscl.org.cn/MulanPSL2
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details. */
+
+#include "transaction_manager.h"
+#include "record/rm_file_handle.h"
+#include "system/sm_manager.h"
 #include "transaction/transaction.h"
-#include <boost/unordered_map.hpp>
-#include <transaction/transaction_manager.h>
-boost::unordered_map<txn_id_t, std::shared_ptr<Transaction>> TransactionManager::txn_map = {};
+#include <memory>
+
+std::unordered_map<txn_id_t, std::shared_ptr<Transaction>>
+    TransactionManager::txn_map = {};
 
 /**
  * @description: 事务的开始方法
@@ -11,7 +24,8 @@ boost::unordered_map<txn_id_t, std::shared_ptr<Transaction>> TransactionManager:
  * 事务指针，空指针代表需要创建新事务，否则开始已有事务
  * @param {LogManager*} log_manager 日志管理器指针
  */
-Transaction *TransactionManager::begin(Transaction *txn, std::shared_ptr<LogManager> log_manager) {
+Transaction *TransactionManager::begin(Transaction *txn,
+                                       LogManager *log_manager) {
   // Todo:
   // 1. 判断传入事务参数是否为空指针
   // 2. 如果为空指针，创建新事务
@@ -52,7 +66,8 @@ std::shared_ptr<Transaction> TransactionManager::begin() {
  * @param {Transaction*} txn 需要提交的事务
  * @param {LogManager*} log_manager 日志管理器指针
  */
-void TransactionManager::commit(std::shared_ptr<Transaction> txn, std::shared_ptr<LogManager> log_manager) {
+void TransactionManager::commit(std::shared_ptr<Transaction> txn,
+                                LogManager *log_manager) {
   // Todo:
   // 1. 如果存在未提交的写操作，提交所有的写操作
   // 2. 释放所有锁
@@ -67,9 +82,17 @@ void TransactionManager::commit(std::shared_ptr<Transaction> txn, std::shared_pt
   }
 
   // 释放写集
+  // 2024-08-04 00:03 FIX: 这里直接clear()应当是不正确的
+  // txn->get_table_write_set()->clear();
   auto table_write_set = txn->get_table_write_set();
+  for (auto &entry : *table_write_set) {
+    delete entry;
+  }
   table_write_set->clear();
   auto get_index_write_set = txn->get_index_write_set();
+  for (auto &entry : *get_index_write_set) {
+    delete entry;
+  }
   get_index_write_set->clear();
 
   // 释放锁集
@@ -83,7 +106,8 @@ void TransactionManager::commit(std::shared_ptr<Transaction> txn, std::shared_pt
  * @param {Transaction *} txn 需要回滚的事务
  * @param {LogManager} *log_manager 日志管理器指针
  */
-void TransactionManager::abort(std::shared_ptr<Transaction> txn, std::shared_ptr<LogManager> log_manager) {
+void TransactionManager::abort(std::shared_ptr<Transaction> txn,
+                               LogManager *log_manager) {
   // Todo:
   // 1. 回滚所有写操作
   // 2. 释放所有锁
@@ -106,34 +130,47 @@ void TransactionManager::abort(std::shared_ptr<Transaction> txn, std::shared_ptr
     } else if (write_record->GetWriteType() == WType::DELETE_TUPLE) {
       rm_file->insert_record(write_record->GetRecord().data, &context);
     } else if (write_record->GetWriteType() == WType::UPDATE_TUPLE) {
-      rm_file->update_record(write_record->GetRid(), write_record->GetRecord().data, &context);
+      rm_file->update_record(write_record->GetRid(),
+                             write_record->GetRecord().data, &context);
     }
 
     table_set->pop_back();
+
+    delete write_record;
+  }
+  // 2024-08-04 00:05 FIX: 此处与commit同理
+  for (auto &entry : *table_set) {
+    delete entry;
   }
   table_set->clear();
 
   auto index_set = txn->get_index_write_set();
   while (!index_set->empty()) {
     auto index_record = index_set->back();
-    auto indexes = sm_manager_->db_.get_table(index_record->GetTableName()).indexes;
+    auto indexes =
+        sm_manager_->db_.get_table(index_record->GetTableName()).indexes;
 
     if (index_record->GetWriteType() == WType::INSERT_TUPLE) {
       for (auto &index : indexes) {
         auto ih = sm_manager_->ihs_
-                      .at(sm_manager_->get_ix_manager()->get_index_name(index_record->GetTableName(), index.cols))
+                      .at(sm_manager_->get_ix_manager()->get_index_name(
+                          index_record->GetTableName(), index.cols))
                       .get();
         ih->delete_entry(index_record->GetKey(), txn.get());
       }
     } else if (index_record->GetWriteType() == WType::DELETE_TUPLE) {
       for (auto &index : indexes) {
         auto ih = sm_manager_->ihs_
-                      .at(sm_manager_->get_ix_manager()->get_index_name(index_record->GetTableName(), index.cols))
+                      .at(sm_manager_->get_ix_manager()->get_index_name(
+                          index_record->GetTableName(), index.cols))
                       .get();
-        ih->insert_entry(index_record->GetKey(), index_record->GetRid(), txn.get());
+        ih->insert_entry(index_record->GetKey(), index_record->GetRid(),
+                         txn.get());
       }
     }
     index_set->pop_back();
+
+    delete index_record;
   }
 
   index_set->clear();

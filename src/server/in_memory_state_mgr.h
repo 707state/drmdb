@@ -12,11 +12,11 @@ public:
     inmem_state_mgr(int srv_id, const std::string& endpoint)
         : my_id_(srv_id)
         , my_endpoint_(endpoint)
-        , cur_log_store_(cs_new<inmem_log_store>()) {
-        my_srv_config_ = cs_new<srv_config>(srv_id, endpoint);
+        , cur_log_store_(new_ptr<inmem_log_store>()) {
+        my_srv_config_ = new_ptr<srv_config>(srv_id, endpoint);
 
         // Initial cluster config: contains only one server (myself).
-        saved_config_ = cs_new<cluster_config>();
+        saved_config_ = new_ptr<cluster_config>();
         saved_config_->get_servers().push_back(my_srv_config_);
     }
 

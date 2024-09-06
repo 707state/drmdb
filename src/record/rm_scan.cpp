@@ -27,3 +27,17 @@ void RmScan::next() {
     for (; rid_.page_no < this->file_handle_->file_hdr_.num_pages; rid_.page_no++) {
     }
 }
+/**
+ * @brief 判断是否到达文件末尾
+ */
+bool RmScan::is_end() const {
+    if (rid_.page_no == RM_NO_PAGE) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @brief RmScan内部存放的rid
+ */
+Rid RmScan::rid() const { return rid_; }

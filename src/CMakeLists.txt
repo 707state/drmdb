@@ -10,7 +10,11 @@ add_subdirectory(storage)
 add_subdirectory(system)
 add_subdirectory(transaction)
 add_subdirectory(record)
+add_subdirectory(execution)
 add_subdirectory(index)
+add_subdirectory(optimizer)
+add_subdirectory(recovery)
+add_subdirectory(analyze)
 add_subdirectory(server)
 add_executable(drmdb server.cpp)
 target_link_libraries(
@@ -20,5 +24,14 @@ target_link_libraries(
   system
   transaction
   record
+  execution
+  analyze
   index
-  server)
+  recovery
+  record
+  optimizer
+  server
+  OpenSSL::SSL
+  OpenSSL::Crypto
+  Boost::thread
+  Boost::system)

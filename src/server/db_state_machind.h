@@ -13,11 +13,15 @@
 #include <string>
 #include <sys/types.h>
 using namespace nuraft;
-
+namespace drmdb_server {
 class db_state_machine : public state_machine {
 public:
     db_state_machine()
         : last_committed_idx_(0) {}
+    db_state_machine(const db_state_machine&) = default;
+    db_state_machine(db_state_machine&&) = default;
+    db_state_machine& operator=(const db_state_machine&) = default;
+    db_state_machine& operator=(db_state_machine&&) = default;
     ~db_state_machine() {}
     ptr<buffer> pre_commit(const ulong log_idx, buffer& data) override {
         // Extract string from `data.
@@ -103,3 +107,4 @@ private:
     ptr<snapshot> last_snapshot_;
     std::mutex last_snapshot_lock_;
 };
+}; // namespace drmdb_server

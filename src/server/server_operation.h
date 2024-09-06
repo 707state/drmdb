@@ -103,9 +103,14 @@ void server_list(const std::string& cmd, const std::vector<std::string>& tokens)
     }
 }
 
-bool do_cmd(const std::vector<std::string>& tokens);
-
+// 定义一个回调类型
+using CommandCallback = std::function<bool(const std::vector<std::string>& tokens)>;
+// extern bool (*do_cmd)(const std::vector<std::string>& tokens);
+extern CommandCallback do_cmd = nullptr;
+// 实现设置回调的函数
+void set_command_callback(CommandCallback callback) { do_cmd = callback; }
 std::vector<std::string> tokenize(const char* str, char c = ' ') {
+
     std::vector<std::string> tokens;
     do {
         const char* begin = str;
@@ -197,7 +202,7 @@ void init_raft(ptr<state_machine> sm_instance) {
     exit(-1);
 }
 
-void usage(int argc, char** argv) {
+void usage(int argc, const char* argv[]) {
     std::stringstream ss;
     ss << "Usage: \n";
     ss << "    " << argv[0] << " <server id> <IP address and port>";
@@ -207,7 +212,7 @@ void usage(int argc, char** argv) {
     exit(0);
 }
 
-void set_server_info(int argc, char** argv) {
+void set_server_info(int argc, const char* argv[]) {
     // Get server ID.
     stuff.server_id_ = atoi(argv[1]);
     if (stuff.server_id_ < 1) {

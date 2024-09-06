@@ -1,30 +1,57 @@
+/* Copyright (c) 2023 Renmin University of China
+RMDB is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL
+v2. You may obtain a copy of Mulan PSL v2 at:
+        http://license.coscl.org.cn/MulanPSL2
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details. */
+
 #pragma once
+
+#include <atomic>
+#include <unordered_map>
+
+#include "concurrency/lock_manager.h"
+#include "recovery/log_manager.h"
 #include "system/sm_manager.h"
-#include "transaction/concurrency/lock_manager.h"
-#include <boost/unordered_map.hpp>
-#include <utility>
+#include "transaction.h"
+
+/* 系统采用的并发控制算法，当前题目中要求两阶段封锁并发控制算法 */
 enum class ConcurrencyMode { TWO_PHASE_LOCKING = 0, BASIC_TO };
 
 class TransactionManager {
 public:
-  explicit TransactionManager(std::shared_ptr<LockManager> lock_manager, std::shared_ptr<SmManager> sm_manager,
-                              ConcurrencyMode concurrency_mode = ConcurrencyMode::TWO_PHASE_LOCKING)
-      : concurrency_mode_(concurrency_mode), sm_manager_(std::move(sm_manager)),
-        lock_manager_(std::move(lock_manager)) {}
+  explicit TransactionManager(
+      LockManager *lock_manager, SmManager *sm_manager,
+      ConcurrencyMode concurrency_mode = ConcurrencyMode::TWO_PHASE_LOCKING) {
+    sm_manager_ = sm_manager;
+    lock_manager_ = lock_manager;
+    concurrency_mode_ = concurrency_mode;
+  }
 
-  ~TransactionManager() = default;
-  Transaction *begin(Transaction *txn, std::shared_ptr<LogManager> log_manager);
+  ~TransactionManager() {
+    // 释放txn_map中所有的Transaction对象
+    // FIX: 这里会导致heap-use-after-free，添加了一个判断
+    if (txn_map.size() > 0) {
+      txn_map.clear();
+    }
+  }
+  Transaction *begin(Transaction *txn, LogManager *log_manager);
 
   std::shared_ptr<Transaction> begin();
-  void commit(std::shared_ptr<Transaction> txn, std::shared_ptr<LogManager> log_manager);
+  void commit(std::shared_ptr<Transaction> txn, LogManager *log_manager);
 
-  void abort(std::shared_ptr<Transaction> txn, std::shared_ptr<LogManager> log_manager);
+  void abort(std::shared_ptr<Transaction> txn, LogManager *log_manager);
 
   ConcurrencyMode get_concurrency_mode() { return concurrency_mode_; }
 
-  void set_concurrency_mode(ConcurrencyMode concurrency_mode) { concurrency_mode_ = concurrency_mode; }
+  void set_concurrency_mode(ConcurrencyMode concurrency_mode) {
+    concurrency_mode_ = concurrency_mode;
+  }
 
-  std::shared_ptr<LockManager> get_lock_manager() { return lock_manager_; }
+  LockManager *get_lock_manager() { return lock_manager_; }
 
   /**
    * @description: 获取事务ID为txn_id的事务对象
@@ -37,7 +64,8 @@ public:
     }
 
     std::unique_lock<std::mutex> lock(latch_);
-    assert(TransactionManager::txn_map.find(txn_id) != TransactionManager::txn_map.end());
+    assert(TransactionManager::txn_map.find(txn_id) !=
+           TransactionManager::txn_map.end());
     auto res = TransactionManager::txn_map[txn_id];
     lock.unlock();
     assert(res != nullptr);
@@ -46,14 +74,15 @@ public:
     return res;
   }
 
-  static boost::unordered_map<txn_id_t, std::shared_ptr<Transaction>>
+  static std::unordered_map<txn_id_t, std::shared_ptr<Transaction>>
       txn_map; // 全局事务表，存放事务ID与事务对象的映射关系
 
 private:
-  ConcurrencyMode concurrency_mode_;           // 事务使用的并发控制算法，目前只需要考虑2PL
+  ConcurrencyMode
+      concurrency_mode_; // 事务使用的并发控制算法，目前只需要考虑2PL
   std::atomic<txn_id_t> next_txn_id_{0};       // 用于分发事务ID
   std::atomic<timestamp_t> next_timestamp_{0}; // 用于分发事务时间戳
   std::mutex latch_;                           // 用于txn_map的并发
-  std::shared_ptr<SmManager> sm_manager_;
-  std::shared_ptr<LockManager> lock_manager_;
+  SmManager *sm_manager_;
+  LockManager *lock_manager_;
 };

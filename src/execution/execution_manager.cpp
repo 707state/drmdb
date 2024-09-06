@@ -1,33 +1,45 @@
+/* Copyright (c) 2023 Renmin University of China
+RMDB is licensed under Mulan PSL v2.
+You can use this software according to the terms and conditions of the Mulan PSL
+v2. You may obtain a copy of Mulan PSL v2 at:
+        http://license.coscl.org.cn/MulanPSL2
+THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+See the Mulan PSL v2 for more details. */
+
+#include "execution_manager.h"
+
+#include "common/config.h"
 #include "common/record_printer.h"
-#include <execution/execution_load.h>
-#include <execution/execution_manager.h>
-#include <execution/execution_projection.h>
+#include "executor_projection.h"
 #include <fstream>
-#include <math.h>
-const char* help_info = R"(Supported SQL syntax:
-  command ;
-command:
-  CREATE TABLE table_name (column_name type [, column_name type ...])
-  DROP TABLE table_name
-  CREATE INDEX table_name (column_name)
-  DROP INDEX table_name (column_name)
-  INSERT INTO table_name VALUES (value [, value ...])
-  DELETE FROM table_name [WHERE where_clause]
-  UPDATE table_name SET column_name = value [, column_name = value ...] [WHERE where_clause]
-  SELECT selector FROM table_name [WHERE where_clause]
-type:
-  {INT | FLOAT | CHAR(n)}
-where_clause:
-  condition [AND condition ...]
-condition:
-  column op {column | value}
-column:
-  [table_name.]column_name
-op:
-  {= | <> | < | > | <= | >=}
-selector:
-  {* | column [, column ...]}
-)";
+#include <iomanip>
+const char* help_info =
+    "Supported SQL syntax:\n"
+    "  command ;\n"
+    "command:\n"
+    "  CREATE TABLE table_name (column_name type [, column_name type ...])\n"
+    "  DROP TABLE table_name\n"
+    "  CREATE INDEX table_name (column_name)\n"
+    "  DROP INDEX table_name (column_name)\n"
+    "  INSERT INTO table_name VALUES (value [, value ...])\n"
+    "  DELETE FROM table_name [WHERE where_clause]\n"
+    "  UPDATE table_name SET column_name = value [, column_name = value ...] "
+    "[WHERE where_clause]\n"
+    "  SELECT selector FROM table_name [WHERE where_clause]\n"
+    "type:\n"
+    "  {INT | FLOAT | CHAR(n)}\n"
+    "where_clause:\n"
+    "  condition [AND condition ...]\n"
+    "condition:\n"
+    "  column op {column | value}\n"
+    "column:\n"
+    "  [table_name.]column_name\n"
+    "op:\n"
+    "  {= | <> | < | > | <= | >=}\n"
+    "selector:\n"
+    "  {* | column [, column ...]}\n";
 
 // 主要负责执行DDL语句
 void QlManager::run_mutli_query(std::shared_ptr<Plan> plan, Context* context) {
@@ -112,7 +124,7 @@ void QlManager::run_cmd_utility(std::shared_ptr<Plan> plan,
 }
 
 // 执行select语句，select语句的输出除了需要返回客户端外，还需要写入output.txt文件中
-void QlManager::select_from(std::shared_ptr<AbstractExecutor> executorTreeRoot,
+void QlManager::select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
                             std::vector<TabCol> sel_cols,
                             Context* context) {
     std::cout << "[Internal] Normal Select" << std::endl;
@@ -151,16 +163,16 @@ void QlManager::select_from(std::shared_ptr<AbstractExecutor> executorTreeRoot,
             std::string col_str;
             char* rec_buf = Tuple->data + col.offset;
             if (col.type == TYPE_INT) {
-                col_str = std::to_string(*reinterpret_cast<int*>(rec_buf));
+                col_str = std::to_string(*(int*)rec_buf);
             } else if (col.type == TYPE_FLOAT) {
-                col_str = std::to_string(*reinterpret_cast<float*>(rec_buf));
+                col_str = std::to_string(*(float*)rec_buf);
             } else if (col.type == TYPE_STRING) {
-                col_str = std::string(rec_buf, col.len);
+                col_str = std::string((char*)rec_buf, col.len);
                 col_str.resize(strlen(col_str.c_str()));
             } else if (col.type == TYPE_DATETIME) {
                 uint64_t raw;
-                memcpy(reinterpret_cast<char*>(&raw), rec_buf, sizeof(raw));
-                DateTime dt{};
+                memcpy((char*)&raw, rec_buf, sizeof(raw));
+                DateTime dt;
                 dt.decode(raw);
                 col_str = dt.encode_to_string();
             } else {
@@ -189,7 +201,7 @@ void QlManager::select_from(std::shared_ptr<AbstractExecutor> executorTreeRoot,
     RecordPrinter::print_record_count(num_rec, context);
 }
 
-void QlManager::aggregate_select_from(std::shared_ptr<AbstractExecutor> executorTreeRoot,
+void QlManager::aggregate_select_from(std::unique_ptr<AbstractExecutor> executorTreeRoot,
                                       std::vector<TabCol> sel_cols,
                                       Context* context,
                                       std::vector<Condition> having_clauses,
@@ -262,7 +274,7 @@ void QlManager::aggregate_select_from(std::shared_ptr<AbstractExecutor> executor
             // APPEND_TO_FILE(rid.page_no, rid.slot_no, "READ");
             char* rec_buf = Tuple->data + col.offset;
             if (col.type == TYPE_INT) {
-                int val = *reinterpret_cast<int*>(rec_buf);
+                int val = *(int*)rec_buf;
                 columns.emplace_back(std::to_string(val));
                 if (std::find_if(group_by_cols.begin(),
                                  group_by_cols.end(),
@@ -274,7 +286,7 @@ void QlManager::aggregate_select_from(std::shared_ptr<AbstractExecutor> executor
                 }
                 agg_results.emplace_back(std::to_string(val));
             } else if (col.type == TYPE_FLOAT) {
-                float val = *reinterpret_cast<float*>(rec_buf);
+                float val = *(float*)rec_buf;
                 columns.emplace_back(std::to_string(val));
                 if (std::find_if(group_by_cols.begin(),
                                  group_by_cols.end(),
@@ -286,7 +298,7 @@ void QlManager::aggregate_select_from(std::shared_ptr<AbstractExecutor> executor
                 }
                 agg_results.emplace_back(std::to_string(val));
             } else if (col.type == TYPE_STRING) {
-                std::string str_val = std::string(rec_buf, col.len);
+                std::string str_val = std::string((char*)rec_buf, col.len);
                 str_val.resize(strlen(str_val.c_str()));
                 columns.emplace_back(str_val);
                 if (std::find_if(group_by_cols.begin(),
@@ -430,7 +442,7 @@ void QlManager::aggregate_select_from(std::shared_ptr<AbstractExecutor> executor
             }
 
             // 根据聚合类型获取对应的结果
-            double agg_value = NAN;
+            double agg_value;
             if (sel_cols[index].ag_type == ast::SV_AGGRE_NONE) {
                 agg_value = std::stod(group[index]); // 非聚合列
             } else {
@@ -439,7 +451,7 @@ void QlManager::aggregate_select_from(std::shared_ptr<AbstractExecutor> executor
 
             // having子句中的比较
             if (having_clause.is_rhs_val) {
-                double rhs_val = NAN;
+                double rhs_val;
                 if (having_clause.rhs_val.type == TYPE_INT) {
                     rhs_val = static_cast<double>(having_clause.rhs_val.int_val);
                 } else if (having_clause.rhs_val.type == TYPE_FLOAT) {
@@ -632,7 +644,7 @@ void QlManager::aggregate_select_from(std::shared_ptr<AbstractExecutor> executor
 }
 
 void QlManager::aggregate_select_from_with_index(
-    std::shared_ptr<AbstractExecutor> executorTreeRoot,
+    std::unique_ptr<AbstractExecutor> executorTreeRoot,
     std::vector<TabCol> sel_cols,
     Context* context) {
     std::cout << "[Internal] Aggregate Select With Index" << std::endl;
@@ -974,8 +986,8 @@ void QlManager::fast_aggre_with_index(std::vector<TabCol> sel_cols,
         }
     }
 
-    delete[] lower_key;
-    delete[] upper_key;
+    delete lower_key;
+    delete upper_key;
 
     rec_printer.print_record(columns, context);
     // print record into file
@@ -994,7 +1006,7 @@ void QlManager::fast_aggre_with_index(std::vector<TabCol> sel_cols,
 }
 
 // 执行DML语句
-void QlManager::run_dml(std::shared_ptr<AbstractExecutor> exec) {
+void QlManager::run_dml(std::unique_ptr<AbstractExecutor> exec) {
     exec->beginTuple();
     exec->Next();
 }

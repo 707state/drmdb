@@ -6,4 +6,4 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 add_library(server STATIC ${SOURCES})
 link_directories(${BOOST_LIBRARY_DIRS})
-target_link_libraries(server raft storage parser)
+target_link_libraries(server raft storage parser execution)

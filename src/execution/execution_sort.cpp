@@ -1,7 +1,7 @@
-#include "record/rm_defs.h"
-#include <execution/execution_sort.h>
-#include <memory>
-auto RmCompare::operator()(const std::unique_ptr<RmRecord> &lhs, const std::unique_ptr<RmRecord> &rhs) -> bool {
+#include "execution_sort.h"
+
+auto RmCompare::operator()(const std::unique_ptr<RmRecord> &lhs,
+                           const std::unique_ptr<RmRecord> &rhs) -> bool {
   for (auto &order_col : order_cols_) {
     auto cols = prev_->cols();
     auto col_meta = *get_col(cols, order_col.tabcol);
@@ -25,9 +25,13 @@ auto RmCompare::operator()(const std::unique_ptr<RmRecord> &lhs, const std::uniq
 
 auto RmCompare::rid() -> Rid & { return _abstract_rid; }
 
-SortExecutor::SortExecutor(std::unique_ptr<AbstractExecutor> prev, std::vector<OrderByCol> order_cols, int limit)
-    : prev_(std::move(prev)), tuple_num_(0), order_cols_(order_cols), limit_(limit), count_(0) {
-
+SortExecutor::SortExecutor(std::unique_ptr<AbstractExecutor> prev,
+                           std::vector<OrderByCol> order_cols, int limit) {
+  prev_ = std::move(prev);
+  order_cols_ = order_cols;
+  limit_ = limit;
+  count_ = 0;
+  tuple_num_ = 0;
   used_tuple.clear();
 }
 
@@ -45,9 +49,13 @@ void SortExecutor::beginTuple() {
 
 void SortExecutor::nextTuple() { count_++; }
 
-auto SortExecutor::Next() -> std::unique_ptr<RmRecord> { return std::move(tuples_[count_]); }
+auto SortExecutor::Next() -> std::unique_ptr<RmRecord> {
+  return std::move(tuples_[count_]);
+}
 
-auto SortExecutor::cols() const -> const std::vector<ColMeta> & { return prev_->cols(); }
+auto SortExecutor::cols() const -> const std::vector<ColMeta> & {
+  return prev_->cols();
+}
 
 auto SortExecutor::is_end() const -> bool {
   if (limit_ != -1 && count_ >= limit_) {
